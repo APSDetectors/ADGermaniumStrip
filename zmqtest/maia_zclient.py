@@ -16,6 +16,8 @@ zc.read(0)
 print "MaxEvents = %d" % (maxevents)
 totallen, bitrate = zc.get_data(filename,maxevents)
 
+totallen, bitrate = zc.get_data('test.bin',50)
+
 zc.context.destroy()
 
 zc.fifo_reset()
@@ -26,14 +28,26 @@ zc.get_framenum()
 REG_STARTFRAME=0xD0
 
 
+FIFORDCNTREG=0x19
+zc.read(FIFORDCNTREG)
+
+REG_SWDEBUG=0xE1
+zc.write(REG_SWDEBUG,1)
+
+
 zc.write(REG_STARTFRAME,1)
 
 zc.read(REG_STARTFRAME)
 
 zc.set_bufsize(10)
 
+ zc.fifo_reset()
 
 zc.set_framelen(100)
+
+zc.start_frame()
+
+
 '''
 
 

@@ -30,6 +30,7 @@
 #define REG_FRAMENUM 0xD8
 #define REG_FRAMELEN 0xD4
 
+#define REG_FIFORST 0x68
 
 //num xfers  
 #define REG_BURSTLEN 0x8C
@@ -37,6 +38,8 @@
 #define REG_BUFFSIZE 0x90
 
 #define REG_RATE 0x98
+
+#define REG_SWDEBUG 0xE1
 
 volatile unsigned int *fpgabase;  //mmap'd fpga registers
 unsigned int databuf[65536];
@@ -166,6 +169,27 @@ void write_reg(int addr, unsigned int val)
 
    fpgabase[addr] = val;
    printf("Write Reg: Addr=0x%x  Val=0x%x\n",addr,val); 
+  
+
+    if (addr==REG_FIFORST && val==4)
+    {
+        printf("Resetting FIFO\n"); 
+
+        fifo_disable();
+        fifo_reset();
+        fifo_enable();
+    }
+    
+    if (addr == REG_SWDEBUG)
+    {
+        if (val==1)
+        {
+            printf("FIFORDCNTREG %d fifo_rd_counter %d fifo_wr_counter %d\n",
+                fpgabase[FIFORDCNTREG],fifo_rd_counter,fifo_wr_counter);
+
+        }
+    }
+   
 
 }
 
@@ -212,6 +236,8 @@ int fifo_getdata(int len, unsigned int *data)
 
    int i;
 
+    printf("fifo_getdata %d\n",len);
+
     pthread_mutex_lock( &fpga_mutex );
 
    for (i=0;i<len;i++) {
@@ -220,6 +246,7 @@ int fifo_getdata(int len, unsigned int *data)
       
       fifo_rd_counter++;
       fpgabase[FIFORDCNTREG]--;
+      printf("i %d data 0x%x\n",i,data[i]);
       //printf("i=%d\t0x%x\t0x%x\t0x%x\t0x%x\n",i,data[0],data[1],data[2],data[3]);
    }
     pthread_mutex_unlock( &fpga_mutex );
@@ -286,6 +313,9 @@ void makeEvent(unsigned int *word0, unsigned int *word1)
     *word0 = *word0 | (td<<12);
     *word1 = ts;
     
+    printf("makeEvent 0x%x 0x%x 0x%x 0x%x\n",addr,pd,td,ts);
+    sim_timestamp+=rand()%0xFFF;
+    
 }
 
 int sim_framelencounter = 0;
@@ -338,11 +368,11 @@ void *fake_detector(void *args)
 
                     pthread_mutex_lock( &fpga_mutex );
 
-                    fpgafifo[fifo_wr_counter&FIFO_LEN]=word0;
+                    fpgafifo[fifo_wr_counter%FIFO_LEN]=word0;
                     fifo_wr_counter++;
                     fpgabase[FIFORDCNTREG]++;
 
-                    fpgafifo[fifo_wr_counter&FIFO_LEN]=word1;
+                    fpgafifo[fifo_wr_counter%FIFO_LEN]=word1;
                     fifo_wr_counter++;
                     fpgabase[FIFORDCNTREG]++;
                     pthread_mutex_unlock( &fpga_mutex );
@@ -357,6 +387,8 @@ void *fake_detector(void *args)
                     detector_state=ST_IDLE;
                     fpgabase[FRAMEACTIVEREG]=0;
                     printf("Fake detector to IDLE state\n");
+                    
+                    printf("FIFO len %d\n",fpgabase[FIFORDCNTREG]);
 
                 
                 }
@@ -409,28 +441,28 @@ void *event_publish(void *args)
         prevframestat = framestat;
         framestat = check_framestatus(); 
         //printf("PrevFrameStat=%d\tFrameStatus=%d\n",prevframestat,framestat); 
-        if (framestat == 1) {
+        if (framestat == 1 ||  fifo_numwords()>0) {
            if ((prevframestat == 0) && (framestat == 1))           
               printf("Frame Started...\n"); 
            numwords = fifo_numwords();
            if (numwords > 0) {
-              //printf("Numwords in FIFO: %d\n",numwords);
+              printf("Numwords in FIFO: %d\n",numwords);
               fifo_getdata(numwords,databuf); 
               evttot += numwords/2; 
               for (i=0;i<numwords;i=i+2) { 
-                  //printf("%x\t%x\n",databuf[i+0],databuf[i+1]); 
-                  //quad = (databuf[i] & 0x60000000) >> 29;
-                  //chipnum = (databuf[i] & 0x18000000) >> 27;
-                  //chan = (databuf[i] & 0x07C00000) >> 22;
-                  //printf("Address: Quad=%d\tChipNum=%d\tChan=%d\n",quad,chipnum,chan);
+                  printf("%x\t%x\n",databuf[i+0],databuf[i+1]); 
+                  quad = (databuf[i] & 0x60000000) >> 29;
+                  chipnum = (databuf[i] & 0x18000000) >> 27;
+                  chan = (databuf[i] & 0x07C00000) >> 22;
+                  printf("Address: Quad=%d\tChipNum=%d\tChan=%d\n",quad,chipnum,chan);
                   addr = (databuf[i] & 0x7FC00000) >> 22;
-                  //printf("Address: %d\n",addr); 
+                  printf("Address: %d\n",addr); 
                   pd = (databuf[i] & 0xFFF);
                   td = (databuf[i] & 0x3FF000) >> 12; 
                   ts = (databuf[i+1] & 0x1FFFFFFF);
-                  //printf("PD: %d\n",pd);
-                  //printf("TD: %d\n",td);
-                  //printf("Timestamp: %u\n",ts);
+                  printf("PD: %d\n",pd);
+                  printf("TD: %d\n",td);
+                  printf("Timestamp: %u\n",ts);
               }
               zmq_msg_init_size(&topic,4);
               memcpy(zmq_msg_data(&topic), "data", 4);
@@ -439,14 +471,14 @@ void *event_publish(void *args)
               zmq_msg_init_size(&msg,numwords*4);
               memcpy(zmq_msg_data(&msg), databuf, numwords*4);
               int size = zmq_msg_send(&msg,publisher,0);
-              //printf("Bytes Sent: %d\n",size);
-              //printf("\n\n"); 
+              printf("Bytes Sent: %d\n",size);
+              printf("\n\n"); 
            
               zmq_msg_close(&msg);
            }
         }
         else
-            if ((prevframestat == 1) && (framestat == 0)) {          
+            if ((prevframestat == 1) && (framestat == 0) && fifo_numwords()==0) {          
                 printf("Frame Complete...\n");
                 framelen = get_framelen(); 
                 evtrate = evttot / framelen;

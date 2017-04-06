@@ -30,4 +30,4 @@ $(MAIASIM): $(MAIASIM).cpp
 	$(CC) $(CFLAGS) -o $(MAIASIM) $(MAIASIM).cpp
   
 clean:
-	$(RM) $(SRV) $(CLT)
+	$(RM) $(SRV) $(CLT) $(MAIASIM)
