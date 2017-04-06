@@ -26,8 +26,8 @@ $(CLT): $(CLT).cpp
 	$(CC) $(CFLAGS) -o $(CLT) $(CLT).cpp
 
   
-$(MAIASIM): $(MAIASIM).cpp
-	$(CC) $(CFLAGS) -o $(MAIASIM) $(MAIASIM).cpp
+$(MAIASIM): $(MAIASIM).cpp erfmath.cpp stopWatch.cpp
+	$(CC) $(CFLAGS) -o $(MAIASIM) erfmath.cpp stopWatch.cpp $(MAIASIM).cpp
   
 clean:
 	$(RM) $(SRV) $(CLT) $(MAIASIM)

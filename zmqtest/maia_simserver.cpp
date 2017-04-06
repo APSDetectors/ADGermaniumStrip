@@ -10,6 +10,8 @@
 #include <math.h>
 #include <fcntl.h>
 
+#include "erfmath.h"
+#include "stopWatch.h"
 
 #define CMD_REG_READ  0
 #define CMD_REG_WRITE 1
@@ -57,7 +59,9 @@ int sim_framenum = 0;
 pthread_mutex_t fpga_mutex=PTHREAD_MUTEX_INITIALIZER;
 
 
+erfmath *mymath=0;
 
+stopWatch *mytimer=0;
 
 /*****************************************
 * fifo_enable 
@@ -236,7 +240,7 @@ int fifo_getdata(int len, unsigned int *data)
 
    int i;
 
-    printf("fifo_getdata %d\n",len);
+    //printf("fifo_getdata %d\n",len);
 
     pthread_mutex_lock( &fpga_mutex );
 
@@ -246,7 +250,7 @@ int fifo_getdata(int len, unsigned int *data)
       
       fifo_rd_counter++;
       fpgabase[FIFORDCNTREG]--;
-      printf("i %d data 0x%x\n",i,data[i]);
+      //printf("i %d data 0x%x\n",i,data[i]);
       //printf("i=%d\t0x%x\t0x%x\t0x%x\t0x%x\n",i,data[0],data[1],data[2],data[3]);
    }
     pthread_mutex_unlock( &fpga_mutex );
@@ -301,11 +305,41 @@ int sim_timestamp =0;
 
 void makeEvent(unsigned int *word0, unsigned int *word1)
 {
-    unsigned int addr, pd, td, ts;
+    unsigned int addr, pd, td, ts,chipnum,chan,quad;
     
-    addr = rand() % 256;
-    pd = rand() % 0xFFF;
-    td = rand() %0x3FF;
+   
+    
+    quad = 0;
+    chipnum=rand()%2;
+    chan =rand()%32;
+    
+    
+    addr = chan + (chipnum<<5) + (quad<<7);
+    
+    //pd = rand() % 0xFFF;
+    //td = rand() %0x3FF;
+    
+    int peak = rand()%10;
+    
+    if (peak<5)
+    {
+        pd =(unsigned int)(mymath->randg(150.0, 2600.0));
+    }
+    else if (peak<8)
+    {
+        pd =(unsigned int)(mymath->randg(150.0, 3400.0));
+    }
+    else
+    {
+        pd =(unsigned int)(mymath->randg(150.0, 2300.0));
+    }
+    
+    
+    td = (unsigned int)(mymath->randg(20.0, 500.0));
+    td = td& 0x3FF;
+    
+    
+    
     ts = 0x1FFFFFFF & sim_timestamp;
     
     *word0 =addr << 22;
@@ -313,8 +347,8 @@ void makeEvent(unsigned int *word0, unsigned int *word1)
     *word0 = *word0 | (td<<12);
     *word1 = ts;
     
-    printf("makeEvent 0x%x 0x%x 0x%x 0x%x\n",addr,pd,td,ts);
-    sim_timestamp+=rand()%0xFFF;
+    //printf("makeEvent 0x%x 0x%x 0x%x 0x%x\n",addr,pd,td,ts);
+    sim_timestamp+=rand()%0xFFFF;
     
 }
 
@@ -329,11 +363,14 @@ volatile int detector_state = 0;
 void *fake_detector(void *args)
 {
     unsigned int word0, word1;
+    int k;
     
     is_running = 1;
     detector_state=0;
     
     printf("Starting fake Ge detector, Idle state\n");
+    
+    double endtime = 0.0;
     
     while(is_running==1)
     {
@@ -354,35 +391,41 @@ void *fake_detector(void *args)
                     sim_framelencounter=0;
                     printf("Fake detector to FRAME state\n");
                     fpgabase[REG_STARTFRAME]=0;
+                    mytimer->tic();
+                    
                     
                 }
                 break;
             
             case ST_FRAME:
                 fpgabase[FRAMEACTIVEREG]=1;
-                
-                
-                if (fpgabase[FIFORDCNTREG] < FIFO_LEN-2)
+                pthread_mutex_lock( &fpga_mutex );
+                for (k=0;k<100;k++)
                 {
-                    makeEvent(&word0, &word1);
+                    if (fpgabase[FIFORDCNTREG] < FIFO_LEN-2)
+                    {
+                        makeEvent(&word0, &word1);
 
-                    pthread_mutex_lock( &fpga_mutex );
+                       
 
-                    fpgafifo[fifo_wr_counter%FIFO_LEN]=word0;
-                    fifo_wr_counter++;
-                    fpgabase[FIFORDCNTREG]++;
+                        fpgafifo[fifo_wr_counter%FIFO_LEN]=word0;
+                        fifo_wr_counter++;
+                        fpgabase[FIFORDCNTREG]++;
 
-                    fpgafifo[fifo_wr_counter%FIFO_LEN]=word1;
-                    fifo_wr_counter++;
-                    fpgabase[FIFORDCNTREG]++;
-                    pthread_mutex_unlock( &fpga_mutex );
+                        fpgafifo[fifo_wr_counter%FIFO_LEN]=word1;
+                        fifo_wr_counter++;
+                        fpgabase[FIFORDCNTREG]++;
+                        
 
-                    
-                    sim_framelencounter+=25000000;
-                    sim_framelencounter+=25000000;
+
+                        //sim_framelencounter+=25000000;
+
+                    }
                 }
+                pthread_mutex_unlock( &fpga_mutex );
+                endtime = (double)(fpgabase[REG_FRAMELEN])/25000000.0;
                 
-                if (sim_framelencounter>=fpgabase[REG_FRAMELEN])
+                if (mytimer->isElapsed(endtime))
                 {
                     detector_state=ST_IDLE;
                     fpgabase[FRAMEACTIVEREG]=0;
@@ -417,13 +460,19 @@ void *fake_detector(void *args)
 *   is data in the fifo, and if so sends it out
 *   to the client
 *******************************************/
+
+#define EVST_IDLE 0
+#define EVST_SEND 1
+#define EVST_END 2
+
+
 void *event_publish(void *args)
 {
-
+    int ev_state = EVST_IDLE;
     int i, quad, chipnum, chan, pd, td, ts, addr;
     void *context = zmq_ctx_new();
     void *publisher = zmq_socket(context, ZMQ_PUB);
-  
+  int size;
     int rc = zmq_bind(publisher,"tcp://*:5556");  
     assert (rc == 0);
     zmq_msg_t  topic, msg;
@@ -438,48 +487,68 @@ void *event_publish(void *args)
     evttot = 0;
 
     while (1) {
-        prevframestat = framestat;
-        framestat = check_framestatus(); 
-        //printf("PrevFrameStat=%d\tFrameStatus=%d\n",prevframestat,framestat); 
-        if (framestat == 1 ||  fifo_numwords()>0) {
-           if ((prevframestat == 0) && (framestat == 1))           
-              printf("Frame Started...\n"); 
-           numwords = fifo_numwords();
-           if (numwords > 0) {
-              printf("Numwords in FIFO: %d\n",numwords);
-              fifo_getdata(numwords,databuf); 
-              evttot += numwords/2; 
-              for (i=0;i<numwords;i=i+2) { 
-                  printf("%x\t%x\n",databuf[i+0],databuf[i+1]); 
-                  quad = (databuf[i] & 0x60000000) >> 29;
-                  chipnum = (databuf[i] & 0x18000000) >> 27;
-                  chan = (databuf[i] & 0x07C00000) >> 22;
-                  printf("Address: Quad=%d\tChipNum=%d\tChan=%d\n",quad,chipnum,chan);
-                  addr = (databuf[i] & 0x7FC00000) >> 22;
-                  printf("Address: %d\n",addr); 
-                  pd = (databuf[i] & 0xFFF);
-                  td = (databuf[i] & 0x3FF000) >> 12; 
-                  ts = (databuf[i+1] & 0x1FFFFFFF);
-                  printf("PD: %d\n",pd);
-                  printf("TD: %d\n",td);
-                  printf("Timestamp: %u\n",ts);
-              }
-              zmq_msg_init_size(&topic,4);
-              memcpy(zmq_msg_data(&topic), "data", 4);
-              zmq_msg_send(&topic,publisher,ZMQ_SNDMORE);
+    
+        switch(ev_state)
+        {
+            case EVST_IDLE:
+                framestat = check_framestatus();
+                if (framestat==1)
+                {
+                   ev_state = EVST_SEND;
+                   printf("Frame Started...\n"); 
+                   numwords = fifo_numwords();
+                   
+                }
+            break;
+            
+            case EVST_SEND:
+              
+                
+              if (numwords > 0) {
+                  printf("Numwords in FIFO: %d\n",numwords);
+                  fifo_getdata(numwords,databuf); 
+                  evttot += numwords/2; 
+                  if (0)
+                      for (i=0;i<numwords;i=i+2) { 
+                          printf("%x\t%x\n",databuf[i+0],databuf[i+1]); 
+                          quad = (databuf[i] & 0x60000000) >> 29;
+                          chipnum = (databuf[i] & 0x18000000) >> 27;
+                          chan = (databuf[i] & 0x07C00000) >> 22;
+                          printf("Address: Quad=%d\tChipNum=%d\tChan=%d\n",quad,chipnum,chan);
+                          addr = (databuf[i] & 0x7FC00000) >> 22;
+                          printf("Address: %d\n",addr); 
+                          pd = (databuf[i] & 0xFFF);
+                          td = (databuf[i] & 0x3FF000) >> 12; 
+                          ts = (databuf[i+1] & 0x1FFFFFFF);
+                          printf("PD: %d\n",pd);
+                          printf("TD: %d\n",td);
+                          printf("Timestamp: %u\n",ts);
+                      }
+                  zmq_msg_init_size(&topic,4);
+                  memcpy(zmq_msg_data(&topic), "data", 4);
+                  zmq_msg_send(&topic,publisher,ZMQ_SNDMORE);
 
-              zmq_msg_init_size(&msg,numwords*4);
-              memcpy(zmq_msg_data(&msg), databuf, numwords*4);
-              int size = zmq_msg_send(&msg,publisher,0);
-              printf("Bytes Sent: %d\n",size);
-              printf("\n\n"); 
-           
-              zmq_msg_close(&msg);
-           }
-        }
-        else
-            if ((prevframestat == 1) && (framestat == 0) && fifo_numwords()==0) {          
-                printf("Frame Complete...\n");
+                  zmq_msg_init_size(&msg,numwords*4);
+                  memcpy(zmq_msg_data(&msg), databuf, numwords*4);
+                  int size = zmq_msg_send(&msg,publisher,0);
+                  printf("Bytes Sent: %d\n",size);
+                  printf("\n\n"); 
+
+                  zmq_msg_close(&msg);
+              }
+              numwords = fifo_numwords();
+              framestat = check_framestatus();
+              
+              if (framestat==0 && numwords==0)
+              {
+                 ev_state = EVST_END;
+            
+              }
+              
+            break;
+            
+            case EVST_END:
+              printf("Frame Complete...\n");
                 framelen = get_framelen(); 
                 evtrate = evttot / framelen;
                 
@@ -492,20 +561,25 @@ void *event_publish(void *args)
                 zmq_msg_init_size(&msg,4);
                 curframenum = get_framenum();
                 memcpy(zmq_msg_data(&msg), &curframenum, 4);
-                int size = zmq_msg_send(&msg,publisher,0);
+                 size = zmq_msg_send(&msg,publisher,0);
                 //printf("Bytes Sent: %d\n",size);
                 //printf("\n\n"); 
            
                 zmq_msg_close(&msg);
-             } 
-
+                ev_state= EVST_IDLE;
+            break;
+            
+            default:
+               ev_state= EVST_IDLE;
+         }//switch
+    
+      
         usleep(2000);
 
-    }   
+    }   //while
 
     pthread_exit(NULL);
 }
-
 
 
 /********************************************************
@@ -520,7 +594,8 @@ int main (void)
     int cmdbuf[3];
     int nbytes;
     
-  
+    mymath = new erfmath();
+    mytimer= new stopWatch();
     
     void *context = zmq_ctx_new();
     void *responder = zmq_socket(context, ZMQ_REP);

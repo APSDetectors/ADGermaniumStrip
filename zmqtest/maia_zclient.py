@@ -1,5 +1,9 @@
 #!/usr/bin/python2.6
 
+
+
+
+
 '''
 
 execfile('maia_zclient.py')
@@ -43,12 +47,17 @@ zc.set_bufsize(10)
 
  zc.fifo_reset()
 
-zc.set_framelen(100)
+zc.set_framelen(1000)
 
 zc.start_frame()
 
 
 '''
+
+
+
+
+
 
 
 ###!/usr/bin/python2.7
@@ -57,6 +66,73 @@ import numpy as np
 #from zclient import zclient
 import datetime, time
 import sys
+import struct
+
+
+
+
+
+def parseFile(fname,numbytes=-1):
+
+    fd = open(fname,'rb')
+    if numbytes==-1:
+        rawdat = fd.read()
+    else:
+       rawdat = fd.read(numbytes)
+        
+    fd.close()
+
+    nints = len(rawdat)/4;
+    
+    intdat = struct.unpack('I'*nints ,rawdat)
+    
+    pds = np.zeros(nints/2)
+    tds = np.zeros(nints/2)
+    
+    
+    for i in range(0,nints,2):       
+        quad = (intdat[i] & 0x60000000) >> 29;
+        chipnum = (intdat[i] & 0x18000000) >> 27;
+        chan = (intdat[i] & 0x07C00000) >> 22;
+        print "Address: Quad=%d\tChipNum=%d\tChan=%d"%(quad,chipnum,chan)
+        
+        
+        pd = (intdat[i] & 0xFFF);
+        td = (intdat[i] & 0x3FF000) >> 12; 
+        
+        pds[i/2]=pd
+        tds[i/2] = td
+        
+        ts = (intdat[i+1] & 0x1FFFFFFF);
+        print "PD: %d"%pd
+        print "TD: %d"%td
+        print "Timestamp: %u"%ts
+
+
+    figure(1)
+    clf()
+    hist(pds)
+    
+    figure(2)
+    clf()
+    hist(tds)
+    
+    
+    #return(intdat)
+    #pdh = np.histogram(pds,bins=10)
+    #tdh = np.histogram(tds,bins=10)
+    #return(pdh)
+    
+    #clf()
+    #plot(pdh[1],pdh[0])
+    #plot(tdh[1],tdh[0])
+    
+
+
+        
+
+
+
 
 class zclient(object):
     ZMQ_DATA_PORT = "5556"
@@ -175,6 +251,11 @@ class zclient(object):
 
 
         return totallen, bitrate
+
+
+
+
+
 
 
 #if __name__ == "__main__":

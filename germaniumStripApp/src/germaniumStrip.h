@@ -6,9 +6,9 @@
 #define DRIVER_MODIFICATION 0
 
 /** Simulation detector driver; demonstrates most of the features that areaDetector drivers can support. */
-class epicsShareClass simDetector : public ADDriver {
+class epicsShareClass germaniumStrip : public ADDriver {
 public:
-    simDetector(const char *portName, int maxSizeX, int maxSizeY, NDDataType_t dataType,
+    germaniumStrip(const char *portName, int maxSizeX, int maxSizeY, NDDataType_t dataType,
                 int maxBuffers, size_t maxMemory,
                 int priority, int stackSize);
 

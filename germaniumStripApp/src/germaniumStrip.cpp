@@ -1,4 +1,4 @@
-/* simDetector.cpp
+/* germaniumStrip.cpp
  *
  * This is a driver for a simulated area detector.
  *
@@ -29,9 +29,9 @@
 
 #include "ADDriver.h"
 #include <epicsExport.h>
-#include "simDetector.h"
+#include "germaniumStrip.h"
 
-static const char *driverName = "simDetector";
+static const char *driverName = "germaniumStrip";
 
 /* Some systems don't define M_PI in math.h */
 #ifndef M_PI
@@ -39,7 +39,7 @@ static const char *driverName = "simDetector";
 #endif
 
 /** Template function to compute the simulated detector data for any data type */
-template <typename epicsType> int simDetector::computeArray(int sizeX, int sizeY)
+template <typename epicsType> int germaniumStrip::computeArray(int sizeX, int sizeY)
 {
     int simMode=0;
     int status = asynSuccess;
@@ -60,7 +60,7 @@ template <typename epicsType> int simDetector::computeArray(int sizeX, int sizeY
 }
 
 /** Template function to compute the simulated detector data for any data type */
-template <typename epicsType> int simDetector::computeLinearRampArray(int sizeX, int sizeY)
+template <typename epicsType> int germaniumStrip::computeLinearRampArray(int sizeX, int sizeY)
 {
     epicsType *pMono=NULL, *pRed=NULL, *pGreen=NULL, *pBlue=NULL;
     int columnStep=0, rowStep=0, colorMode;
@@ -170,7 +170,7 @@ template <typename epicsType> int simDetector::computeLinearRampArray(int sizeX,
 }
 
 /** Compute array for array of peaks */
-template <typename epicsType> int simDetector::computePeaksArray(int sizeX, int sizeY)
+template <typename epicsType> int germaniumStrip::computePeaksArray(int sizeX, int sizeY)
 {
     epicsType *pMono=NULL, *pRed=NULL;
     epicsType *pMono2=NULL, *pRed2=NULL, *pGreen2=NULL, *pBlue2=NULL;
@@ -344,7 +344,7 @@ template <typename epicsType> int simDetector::computePeaksArray(int sizeX, int 
 }
 
 /** Template function to compute the simulated detector data for any data type */
-template <typename epicsType> int simDetector::computeSineArray(int sizeX, int sizeY)
+template <typename epicsType> int germaniumStrip::computeSineArray(int sizeX, int sizeY)
 {
     epicsType *pMono=NULL, *pRed=NULL, *pGreen=NULL, *pBlue=NULL;
     int columnStep=0, rowStep=0, colorMode;
@@ -493,7 +493,7 @@ template <typename epicsType> int simDetector::computeSineArray(int sizeX, int s
 }
 
 /** Controls the shutter */
-void simDetector::setShutter(int open)
+void germaniumStrip::setShutter(int open)
 {
     int shutterMode;
 
@@ -508,7 +508,7 @@ void simDetector::setShutter(int open)
 }
 
 /** Computes the new image data */
-int simDetector::computeImage()
+int germaniumStrip::computeImage()
 {
     int status = asynSuccess;
     NDDataType_t dataType;
@@ -688,14 +688,14 @@ int simDetector::computeImage()
 
 static void simTaskC(void *drvPvt)
 {
-    simDetector *pPvt = (simDetector *)drvPvt;
+    germaniumStrip *pPvt = (germaniumStrip *)drvPvt;
 
     pPvt->simTask();
 }
 
 /** This thread calls computeImage to compute new image data and does the callbacks to send it to higher layers.
   * It implements the logic for single, multiple or continuous acquisition. */
-void simDetector::simTask()
+void germaniumStrip::simTask()
 {
     int status = asynSuccess;
     int imageCounter;
@@ -861,7 +861,7 @@ void simDetector::simTask()
   * For all parameters it sets the value in the parameter library and calls any registered callbacks..
   * \param[in] pasynUser pasynUser structure that encodes the reason and address.
   * \param[in] value Value to write. */
-asynStatus simDetector::writeInt32(asynUser *pasynUser, epicsInt32 value)
+asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
 {
     int function = pasynUser->reason;
     int adstatus;
@@ -934,7 +934,7 @@ asynStatus simDetector::writeInt32(asynUser *pasynUser, epicsInt32 value)
   * For all parameters it sets the value in the parameter library and calls any registered callbacks..
   * \param[in] pasynUser pasynUser structure that encodes the reason and address.
   * \param[in] value Value to write. */
-asynStatus simDetector::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
+asynStatus germaniumStrip::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
 {
     int function = pasynUser->reason;
     asynStatus status = asynSuccess;
@@ -977,7 +977,7 @@ asynStatus simDetector::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
   * \param[in] fp File pointed passed by caller where the output is written to.
   * \param[in] details If >0 then driver details are printed.
   */
-void simDetector::report(FILE *fp, int details)
+void germaniumStrip::report(FILE *fp, int details)
 {
 
     fprintf(fp, "Simulation detector %s\n", this->portName);
@@ -993,7 +993,7 @@ void simDetector::report(FILE *fp, int details)
     ADDriver::report(fp, details);
 }
 
-/** Constructor for simDetector; most parameters are simply passed to ADDriver::ADDriver.
+/** Constructor for germaniumStrip; most parameters are simply passed to ADDriver::ADDriver.
   * After calling the base class constructor this method creates a thread to compute the simulated detector data,
   * and sets reasonable default values for parameters defined in this class, asynNDArrayDriver and ADDriver.
   * \param[in] portName The name of the asyn port driver to be created.
@@ -1007,7 +1007,7 @@ void simDetector::report(FILE *fp, int details)
   * \param[in] priority The thread priority for the asyn port driver thread if ASYN_CANBLOCK is set in asynFlags.
   * \param[in] stackSize The stack size for the asyn port driver thread if ASYN_CANBLOCK is set in asynFlags.
   */
-simDetector::simDetector(const char *portName, int maxSizeX, int maxSizeY, NDDataType_t dataType,
+germaniumStrip::germaniumStrip(const char *portName, int maxSizeX, int maxSizeY, NDDataType_t dataType,
                          int maxBuffers, size_t maxMemory, int priority, int stackSize)
 
     : ADDriver(portName, 1, NUM_SIM_DETECTOR_PARAMS, maxBuffers, maxMemory,
@@ -1019,7 +1019,7 @@ simDetector::simDetector(const char *portName, int maxSizeX, int maxSizeY, NDDat
 {
     int status = asynSuccess;
     char versionString[20];
-    const char *functionName = "simDetector";
+    const char *functionName = "germaniumStrip";
 
     /* Create the epicsEvents for signaling to the simulate task when acquisition starts and stops */
     startEventId_ = epicsEventCreate(epicsEventEmpty);
@@ -1074,10 +1074,10 @@ simDetector::simDetector(const char *portName, int maxSizeX, int maxSizeY, NDDat
     status |= setStringParam (ADModel, "Basic simulator");
     epicsSnprintf(versionString, sizeof(versionString), "%d.%d.%d", 
                   DRIVER_VERSION, DRIVER_REVISION, DRIVER_MODIFICATION);
-    setStringParam(NDDriverVersion, versionString);
-    setStringParam(ADSDKVersion, versionString);
-    setStringParam(ADSerialNumber, "No serial number");
-    setStringParam(ADFirmwareVersion, "No firmware");
+   //!! setStringParam(NDDriverVersion, versionString);
+   //!! setStringParam(ADSDKVersion, versionString);
+   //!! setStringParam(ADSerialNumber, "No serial number");
+   //!! setStringParam(ADFirmwareVersion, "No firmware");
 
     status |= setIntegerParam(ADMaxSizeX, maxSizeX);
     status |= setIntegerParam(ADMaxSizeY, maxSizeY);
@@ -1134,10 +1134,10 @@ simDetector::simDetector(const char *portName, int maxSizeX, int maxSizeY, NDDat
 }
 
 /** Configuration command, called directly or from iocsh */
-extern "C" int simDetectorConfig(const char *portName, int maxSizeX, int maxSizeY, int dataType,
+extern "C" int germaniumStripConfig(const char *portName, int maxSizeX, int maxSizeY, int dataType,
                                  int maxBuffers, int maxMemory, int priority, int stackSize)
 {
-    new simDetector(portName, maxSizeX, maxSizeY, (NDDataType_t)dataType,
+    new germaniumStrip(portName, maxSizeX, maxSizeY, (NDDataType_t)dataType,
                     (maxBuffers < 0) ? 0 : maxBuffers,
                     (maxMemory < 0) ? 0 : maxMemory, 
                     priority, stackSize);
@@ -1145,36 +1145,36 @@ extern "C" int simDetectorConfig(const char *portName, int maxSizeX, int maxSize
 }
 
 /** Code for iocsh registration */
-static const iocshArg simDetectorConfigArg0 = {"Port name", iocshArgString};
-static const iocshArg simDetectorConfigArg1 = {"Max X size", iocshArgInt};
-static const iocshArg simDetectorConfigArg2 = {"Max Y size", iocshArgInt};
-static const iocshArg simDetectorConfigArg3 = {"Data type", iocshArgInt};
-static const iocshArg simDetectorConfigArg4 = {"maxBuffers", iocshArgInt};
-static const iocshArg simDetectorConfigArg5 = {"maxMemory", iocshArgInt};
-static const iocshArg simDetectorConfigArg6 = {"priority", iocshArgInt};
-static const iocshArg simDetectorConfigArg7 = {"stackSize", iocshArgInt};
-static const iocshArg * const simDetectorConfigArgs[] =  {&simDetectorConfigArg0,
-                                                          &simDetectorConfigArg1,
-                                                          &simDetectorConfigArg2,
-                                                          &simDetectorConfigArg3,
-                                                          &simDetectorConfigArg4,
-                                                          &simDetectorConfigArg5,
-                                                          &simDetectorConfigArg6,
-                                                          &simDetectorConfigArg7};
-static const iocshFuncDef configsimDetector = {"simDetectorConfig", 8, simDetectorConfigArgs};
-static void configsimDetectorCallFunc(const iocshArgBuf *args)
+static const iocshArg germaniumStripConfigArg0 = {"Port name", iocshArgString};
+static const iocshArg germaniumStripConfigArg1 = {"Max X size", iocshArgInt};
+static const iocshArg germaniumStripConfigArg2 = {"Max Y size", iocshArgInt};
+static const iocshArg germaniumStripConfigArg3 = {"Data type", iocshArgInt};
+static const iocshArg germaniumStripConfigArg4 = {"maxBuffers", iocshArgInt};
+static const iocshArg germaniumStripConfigArg5 = {"maxMemory", iocshArgInt};
+static const iocshArg germaniumStripConfigArg6 = {"priority", iocshArgInt};
+static const iocshArg germaniumStripConfigArg7 = {"stackSize", iocshArgInt};
+static const iocshArg * const germaniumStripConfigArgs[] =  {&germaniumStripConfigArg0,
+                                                          &germaniumStripConfigArg1,
+                                                          &germaniumStripConfigArg2,
+                                                          &germaniumStripConfigArg3,
+                                                          &germaniumStripConfigArg4,
+                                                          &germaniumStripConfigArg5,
+                                                          &germaniumStripConfigArg6,
+                                                          &germaniumStripConfigArg7};
+static const iocshFuncDef configgermaniumStrip = {"germaniumStripConfig", 8, germaniumStripConfigArgs};
+static void configgermaniumStripCallFunc(const iocshArgBuf *args)
 {
-    simDetectorConfig(args[0].sval, args[1].ival, args[2].ival, args[3].ival,
+    germaniumStripConfig(args[0].sval, args[1].ival, args[2].ival, args[3].ival,
                       args[4].ival, args[5].ival, args[6].ival, args[7].ival);
 }
 
 
-static void simDetectorRegister(void)
+static void germaniumStripRegister(void)
 {
 
-    iocshRegister(&configsimDetector, configsimDetectorCallFunc);
+    iocshRegister(&configgermaniumStrip, configgermaniumStripCallFunc);
 }
 
 extern "C" {
-epicsExportRegistrar(simDetectorRegister);
+epicsExportRegistrar(germaniumStripRegister);
 }
