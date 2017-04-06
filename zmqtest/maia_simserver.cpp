@@ -303,6 +303,12 @@ void mmap_fpga()
 
 int sim_timestamp =0;
 
+
+float energy0=2600;
+float energy1=3400;
+float energy2=2200;
+float energy3=500.0;
+
 void makeEvent(unsigned int *word0, unsigned int *word1)
 {
     unsigned int addr, pd, td, ts,chipnum,chan,quad;
@@ -323,19 +329,19 @@ void makeEvent(unsigned int *word0, unsigned int *word1)
     
     if (peak<5)
     {
-        pd =(unsigned int)(mymath->randg(150.0, 2600.0));
+        pd =(unsigned int)(mymath->randg(150.0, energy0));
     }
     else if (peak<8)
     {
-        pd =(unsigned int)(mymath->randg(150.0, 3400.0));
+        pd =(unsigned int)(mymath->randg(150.0, energy1));
     }
     else
     {
-        pd =(unsigned int)(mymath->randg(150.0, 2300.0));
+        pd =(unsigned int)(mymath->randg(150.0, energy2));
     }
     
     
-    td = (unsigned int)(mymath->randg(20.0, 500.0));
+    td = (unsigned int)(mymath->randg(20.0, energy3));
     td = td& 0x3FF;
     
     
@@ -392,6 +398,11 @@ void *fake_detector(void *args)
                     printf("Fake detector to FRAME state\n");
                     fpgabase[REG_STARTFRAME]=0;
                     mytimer->tic();
+                    
+                    energy0=mymath->randf()*2000.0 + 1500.0;
+                    energy1=mymath->randf()*2000.0 + 1500.0;
+                    energy2=mymath->randf()*2000.0 + 1500.0;
+                    energy3=mymath->randf()*300.0 + 500.0;
                     
                     
                 }

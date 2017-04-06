@@ -20,7 +20,7 @@ zc.read(0)
 print "MaxEvents = %d" % (maxevents)
 totallen, bitrate = zc.get_data(filename,maxevents)
 
-totallen, bitrate = zc.get_data('test.bin',50)
+totallen, bitrate = zc.get_data('test')
 
 zc.context.destroy()
 
@@ -47,9 +47,14 @@ zc.set_bufsize(10)
 
  zc.fifo_reset()
 
-zc.set_framelen(1000)
+
+
+
+zc.set_framelen(0.2)
 
 zc.start_frame()
+totallen, bitrate = zc.get_data('test')
+parseFile('test.dat',numbytes=1000000,isprint = False)
 
 
 '''
@@ -72,7 +77,7 @@ import struct
 
 
 
-def parseFile(fname,numbytes=-1):
+def parseFile(fname,numbytes=-1,isprint = False):
 
     fd = open(fname,'rb')
     if numbytes==-1:
@@ -94,7 +99,6 @@ def parseFile(fname,numbytes=-1):
         quad = (intdat[i] & 0x60000000) >> 29;
         chipnum = (intdat[i] & 0x18000000) >> 27;
         chan = (intdat[i] & 0x07C00000) >> 22;
-        print "Address: Quad=%d\tChipNum=%d\tChan=%d"%(quad,chipnum,chan)
         
         
         pd = (intdat[i] & 0xFFF);
@@ -104,9 +108,11 @@ def parseFile(fname,numbytes=-1):
         tds[i/2] = td
         
         ts = (intdat[i+1] & 0x1FFFFFFF);
-        print "PD: %d"%pd
-        print "TD: %d"%td
-        print "Timestamp: %u"%ts
+        if isprint:
+            print "Address: Quad=%d\tChipNum=%d\tChan=%d"%(quad,chipnum,chan)
+            print "PD: %d"%pd
+            print "TD: %d"%td
+            print "Timestamp: %u"%ts
 
 
     figure(1)
@@ -207,13 +213,13 @@ class zclient(object):
         self.__cntrl_recv()
 
 
-    def get_data(self, filename, maxevents):
+    def get_data(self, filename, maxevents=-1):
         self.nbr = 0
         totallen = 0
 
         start = datetime.datetime.now()
 
-        fd = open(filename,'wb')
+        fd = open('%s.dat'%filename,'wb')
         print "In Get Data"
         while True:
             [address, msg] = self.data_sock.recv_multipart()
@@ -226,7 +232,8 @@ class zclient(object):
                 print "Meta data received"
                 meta_data = np.frombuffer(msg, dtype=np.uint32)
                 print meta_data
-                np.savetxt("meta.txt",meta_data,fmt="%x")
+                np.savetxt("%s.txt"%filename,meta_data,fmt="%x")
+                break
             if (address == zclient.TOPIC_DATA):
                 print "Event data received"
                 data = np.frombuffer(msg, dtype=np.uint32)
@@ -234,8 +241,9 @@ class zclient(object):
                 totallen = totallen + len(data)
                 print "Msg Num: %d, Msg len: %d, Tot len: %d" % (self.nbr,len(data),totallen)
                 #print data
-                if totallen > maxevents:
+                if maxevents!=-1 and totallen > maxevents:
                     break;
+
                 self.nbr += 1
 
         stop = datetime.datetime.now()
