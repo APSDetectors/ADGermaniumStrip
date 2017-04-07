@@ -59,10 +59,7 @@ protected:
 
 private:
     /* These are the methods that are new to this class */
-    template <typename epicsType> int computeArray(int sizeX, int sizeY);
-    template <typename epicsType> int computeLinearRampArray(int sizeX, int sizeY);
-    template <typename epicsType> int computePeaksArray(int sizeX, int sizeY);
-    template <typename epicsType> int computeSineArray(int sizeX, int sizeY);
+  
     int computeImage();
 
     /* Our data */
