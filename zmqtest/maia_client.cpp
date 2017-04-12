@@ -117,7 +117,7 @@ int initDataclient(char *connect_str)
     
     data_context = zmq_ctx_new();
     data_socket = zmq_socket(data_context,ZMQ_SUB);
-    sprintf(ctstr,"%s:%d",connect_str,ZMQ_DATA_PORT);
+    sprintf(ctstr,"%s:%s",connect_str,ZMQ_DATA_PORT);
     int rc = zmq_connect(
         data_socket,
         ctstr);
@@ -135,7 +135,7 @@ int initDataclient(char *connect_str)
         ZMQ_SUBSCRIBE, 
         TOPIC_META,
         4);
-     printf("initDataclient done  \n");
+     printf("initDataclient done  %s\n",ctstr);
 
 }
 
@@ -300,9 +300,9 @@ void getOneFrameToFile(char *filename, unsigned int maxevents)
         memcpy(topicstr,msg_address,4);
         
         
-  
+    printf("topic %s\n",topicstr);
             
-        if (strcmp(topicstr,TOPIC_META))
+        if (strcmp(topicstr,TOPIC_META)==0)
         {
                 printf(" meta\n");
 
@@ -322,9 +322,8 @@ void getOneFrameToFile(char *filename, unsigned int maxevents)
             fclose(fd2);
         
             break;
-        }
-        
-        if (strcmp(topicstr,TOPIC_DATA))
+        }        
+        else if (strcmp(topicstr,TOPIC_DATA)==0)
         {                
             printf("Event data received\n");
 
@@ -345,6 +344,10 @@ void getOneFrameToFile(char *filename, unsigned int maxevents)
             nbr++;
  
         }  //   if (strcmp(msg_address,TOPIC_DATA)
+        else
+        {
+            printf("Unexpected topic %s\n",topicstr);
+        }
     }//while
            
     zmq_msg_close(&topic);
@@ -369,8 +372,11 @@ void getOneFrameToFile(char *filename, unsigned int maxevents)
 
 void *dateReceiveDaemon(void *args)
 {
-    zmqapsclient::initDataclient("tcp://127.0.0.1");
     printf(" dateReceiveDaemon\n");
+
+    zmqapsclient::initDataclient("tcp://127.0.0.1");
+    printf("done initDataclient\n");
+    
     int numfiles = 10;
     int filenum = 0;
     
