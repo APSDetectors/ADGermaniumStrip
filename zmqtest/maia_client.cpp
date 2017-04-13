@@ -6,83 +6,40 @@
 #include <assert.h>
 #include <pthread.h>
 #include <sys/mman.h>
-//#include "zhelpers.h"
 #include <math.h>
 #include <fcntl.h>
 
-#include "erfmath.h"
 #include "stopWatch.h"
 
-#define CMD_REG_READ  0
-#define CMD_REG_WRITE 1
-#define CMD_START_DMA 2
-
-#define FIFODATAREG 0x18
-#define FIFORDCNTREG 0x19
-#define FIFOCNTRLREG 0x1a
-
-#define FRAMEACTIVEREG 0x34
-//#define FRAMENUMREG 0x36
-//#define FRAMELENREG 0x35
-#define FRAMELENREG 0xD8
-#define FRAMENUMREG 0xD4
+#include "maia_client.h"
 
 
-#define REG_STARTFRAME 0xD0
-#define REG_FRAMENUM 0xD8
-#define REG_FRAMELEN 0xD4
+maia_client::maia_client() {
 
-#define REG_FIFORST 0x68
+   mytimer = new stopWatch();
+   ctrl_context=0;
+   ctrl_socket=0;
+   data_context=0;
+   data_socket=0;
 
-//num xfers  
-#define REG_BURSTLEN 0x8C
-//in bytes
-#define REG_BUFFSIZE 0x90
 
-#define REG_RATE 0x98
-
-#define REG_SWDEBUG 0xE1
-
-volatile unsigned int *fpgabase;  //mmap'd fpga registers
-unsigned int databuf[65536];
-
-#define FIFO_LEN 65536
-volatile unsigned int fpgafifo[FIFO_LEN];
-volatile unsigned int fifo_wr_counter;
-volatile unsigned int fifo_rd_counter;
-volatile int is_fifo_enabled = 0;
+}
 
 
 
-int sim_framenum = 0;
-
-pthread_mutex_t fpga_mutex=PTHREAD_MUTEX_INITIALIZER;
-
-
-erfmath *mymath=0;
-
-stopWatch *mytimer=0;
-
-#define ZMQ_DATA_PORT   "5556"
-#define ZMQ_CNTL_PORT   "5555"
-#define TOPIC_DATA      "data"
-#define TOPIC_META      "meta"
-
-#define MAX_MSG_WORDS 65536
-
-void *ctrl_context=0;
-void *ctrl_socket=0;
-
-void *data_context = 0;
-void *data_socket;
+maia_client::~maia_client() {
+	
+    delete(mytimer);
+    
+    if (data_context!=0)
+        destroy();
+        
+    //!! delete sockets!!! how to?
+}
+    
 
 
-
-namespace zmqapsclient 
-{
-
-
-int initCommandClient(char *connect_str)
+int maia_client::initCommandClient(char *connect_str)
 {        
     char ctstr[256];
 
@@ -110,7 +67,7 @@ int initCommandClient(char *connect_str)
 
 }
 
-int initDataclient(char *connect_str)
+int maia_client::initDataclient(char *connect_str)
 {
     char ctstr[256];
      printf("initDataclient  \n");
@@ -140,7 +97,7 @@ int initDataclient(char *connect_str)
 }
 
 
-int cntrlRecv(int maxnints, unsigned int *cmd_buf)
+int maia_client::cntrlRecv(int maxnints, unsigned int *cmd_buf)
 {
 
         int nbytes = zmq_recv(ctrl_socket,cmd_buf,sizeof(int)*maxnints, 0);
@@ -150,18 +107,23 @@ int cntrlRecv(int maxnints, unsigned int *cmd_buf)
 
 }
 
-int cntrlSend(int nints, unsigned int *payload)
+int maia_client::cntrlSend(int nints, unsigned int *payload)
 {
     zmq_send(ctrl_socket, payload, sizeof(int)*nints, 0);
 }
 
-void destroy(void)
+void maia_client::destroy(void)
 {
     zmq_ctx_destroy(data_context);
-    zmq_ctx_destroy(ctrl_context);    
+    zmq_ctx_destroy(ctrl_context);
+    
+    data_context=0;
+    ctrl_context=0;
+    //!! need to destrpy sockets or we get mem l3eaks
+        
 }
 
-void write(unsigned int addr, unsigned int value)
+void maia_client::write(unsigned int addr, unsigned int value)
 {
     unsigned int payload[3];
     unsigned int ret_buf[3];
@@ -177,7 +139,7 @@ void write(unsigned int addr, unsigned int value)
 
 }
 
-int read(unsigned int addr)
+int maia_client::read(unsigned int addr)
 {
 
     unsigned int payload[3];
@@ -195,40 +157,40 @@ int read(unsigned int addr)
 }
 
 
-void setBurstlen(unsigned int value)
+void maia_client::setBurstlen(unsigned int value)
 {
     write(REG_BURSTLEN,value);
     printf("Burst length set to %d transfers\n", value);
 }
 
-void setBufSize(unsigned int value)
+void maia_client::setBufSize(unsigned int value)
 {
     write(REG_BUFFSIZE,value);
     printf("Buffer size set to %d bytes\n",  value);
 }
 
-void setRate(float rate)
+void maia_client::setRate(float rate)
 {
     unsigned int n = (unsigned int)( (400e6 / (rate*1e6)) - 1);
     write(REG_RATE,n);
     printf("Rate set to %.2f MHz\n",(400e6/((float)n+1) / 1e6));
 }
 
-void setFrameLen(float value)
+void maia_client::setFrameLen(float value)
 {
     write(REG_FRAMELEN,(unsigned int)(value*25000000.0));
     printf("Frame length set to %d secs\n",value);
 }
 
 
-void startFrame(void)
+void maia_client::startFrame(void)
 {
     write(REG_STARTFRAME,1);
     printf("New Frame Initiated...\n" );
 }
 
 
-unsigned int getFrameNum(void)
+unsigned int maia_client::getFrameNum(void)
 {
     unsigned int val = read(REG_FRAMENUM);
     printf("Frame Num=%d\n", val);
@@ -236,7 +198,7 @@ unsigned int getFrameNum(void)
 }
 
 
-void fifoReset(void)
+void maia_client::fifoReset(void)
 {
     printf("Resetting FIFO..\n");
     write(REG_FIFORST,4);
@@ -244,7 +206,7 @@ void fifoReset(void)
 }
 
 
-void triggerData(void)
+void maia_client::triggerData(void)
 {
     unsigned int payload[3];
     unsigned int ret_buf[3];
@@ -260,7 +222,7 @@ void triggerData(void)
     
 }
 
-void getOneFrameToFile(char *filename, unsigned int maxevents)
+void maia_client::getOneFrameToFile(char *filename, unsigned int maxevents)
 {
     unsigned int nbr = 0;
     unsigned int totallen=0;
@@ -370,7 +332,7 @@ void getOneFrameToFile(char *filename, unsigned int maxevents)
 
 
 
-void *dateReceiveDaemon(void *args)
+void *maia_dateReceiveDaemon(void *args)
 {
     printf(" dateReceiveDaemon\n");
 
