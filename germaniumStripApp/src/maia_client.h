@@ -111,14 +111,15 @@ class maia_client{
     void *data_socket;
     
     volatile bool is_rcv_waiting;
-
+    volatile bool is_writing_file;
 
     char connect_str[256];
 
     zmq_msg_t  *topic;
     zmq_msg_t  *msg;
     
-
+    enum {data_buffer_size = 262144};
+    unsigned int data_buffer[262144];
 
 
 
