@@ -14,8 +14,10 @@ endif
 
 INC += germaniumStrip.h
 
+
 LIBRARY_IOC = germaniumStrip
 LIB_SRCS += germaniumStrip.cpp
+LIB_SRCS += maia_client.cpp
 
 DBD += germaniumStripSupport.dbd
 
