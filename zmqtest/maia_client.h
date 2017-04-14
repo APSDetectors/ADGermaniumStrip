@@ -73,6 +73,7 @@ class maia_client{
         unsigned int *databuffer, 
         int *num_ints_rcvd,//num ints in mesage
         int *is_meta_nis_data,// 1 for meta, 0 for data
+        int *frame_number,
         unsigned int max_ints//max ints to rcv
         );
 

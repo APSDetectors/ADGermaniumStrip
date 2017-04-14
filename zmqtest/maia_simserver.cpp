@@ -539,6 +539,11 @@ void *event_publish(void *args)
                   memcpy(zmq_msg_data(&topic), "data", 4);
                   zmq_msg_send(&topic,publisher,ZMQ_SNDMORE);
 
+                  int fnum = get_framenum();
+                  memcpy(zmq_msg_data(&topic), &fnum, 4);
+                  zmq_msg_send(&topic,publisher,ZMQ_SNDMORE);
+                  zmq_msg_close(&topic);
+
                   zmq_msg_init_size(&msg,numwords*4);
                   memcpy(zmq_msg_data(&msg), databuf, numwords*4);
                   int size = zmq_msg_send(&msg,publisher,0);
@@ -568,6 +573,7 @@ void *event_publish(void *args)
                 zmq_msg_init_size(&topic,4);
                 memcpy(zmq_msg_data(&topic), "meta", 4);
                 zmq_msg_send(&topic,publisher,ZMQ_SNDMORE);
+                  zmq_msg_close(&topic);
 
                 zmq_msg_init_size(&msg,4);
                 curframenum = get_framenum();

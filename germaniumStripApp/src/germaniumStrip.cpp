@@ -92,47 +92,83 @@ void germaniumStrip::geTask()
     while(is_running_deamon)
     {
     
-
-        /* We are acquiring. */
-        /* Get the current time */
-        epicsTimeGetCurrent(&startTime);
-       
-
-        /* Get the exposure parameters */
-        getDoubleParam(ADAcquireTime, &acquireTime);
-        getDoubleParam(ADAcquirePeriod, &acquirePeriod);
-
-        setIntegerParam(ADStatus, ADStatusAcquire);
-
-        /* Call the callbacks to update any changes */
-        callParamCallbacks();
-
-        /* Geulate being busy during the exposure time.  Use epicsEventWaitWithTimeout so that
-         * manually stopping the acquisition will work */
-
-            
-
-        callParamCallbacks();
-
-        pImage = this->pArrays[0];
-
-        /* Get the current parameters */
-        getIntegerParam(NDArrayCounter, &imageCounter);
-        getIntegerParam(ADNumImages, &numImages);
-        getIntegerParam(ADNumImagesCounter, &numImagesCounter);
-        getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
-        imageCounter++;
-        numImagesCounter++;
-        setIntegerParam(NDArrayCounter, imageCounter);
-        setIntegerParam(ADNumImagesCounter, numImagesCounter);
-
-        /* Put the frame number and time stamp into the buffer */
-        pImage->uniqueId = imageCounter;
-        pImage->timeStamp = startTime.secPastEpoch + startTime.nsec / 1.e9;
-        updateTimeStamp(&pImage->epicsTS);
-
-        /* Get any attributes that have been defined for this driver */
-        this->getAttributes(pImage->pAttributeList);
+        // frame is a long acq from ge strip det. it makes manuy images. one message from zmq is one image.
+        // each image is around 64 k or less. 100s images per frame.     
+        // we need to associate frame number w/ eqach message. we alter server on maia to send frame nub
+        // every message.
+        
+        //!! this should not be hard coded...
+        int ndims = 1;
+        size_t dims[1];
+        dims[0] = 65536;
+        
+        NDArray *image;
+        
+        this->pNDArrayPool->alloc(ndims,dims, NDUInt32, 0, image);
+        unsigned int*databuffer = (unsigned int*)image->pData;
+        
+        
+        
+        int num_ints_rcvd;
+        int is_meta_nis_data;
+        int frame_number;
+        unsigned int max_ints=65536;
+        
+        //wait for message.
+        
+        getOneMessage(
+            databuffer, 
+            &num_ints_rcvd,//num ints in mesage
+            &is_meta_nis_data,// 1 for meta, 0 for data
+            &frame_number,
+            max_ints//max ints to rcv
+            );
+        
+        int num_events = num_ints_rcvd/2;
+    
+        //NDAttribute (const char *pName, const char *pDescription, NDAttrSource_t sourceType, const char *pSource, NDAttrDataType_t dataType, void *pValue)
+    
+               
+        //add new attr to img, if not already there. if there, it updates values         
+        image->pAttributeList->add(
+            "maia_frame_number", 
+            "ge strip det hw frame num",
+             NDAttrInt32, 
+             &frame_number);
+               
+        //add new attr to img, if not already there. if there, it updates values         
+        image->pAttributeList->add(
+            "maia_type", 
+            "DATA =0, META=1, for raw Ge Strip Det data",
+             NDAttrInt32, 
+             &is_meta_nis_data);
+      
+     
+                   
+        //add new attr to img, if not already there. if there, it updates values         
+        image->pAttributeList->add(
+            "maia_num_events", 
+            "num raw events in this image",
+             NDAttrInt32, 
+             &num_events);
+      
+         
+         getIntegerParam(NDArrayCounter, &imageCounter);
+          imageCounter++;
+          setIntegerParam(NDArrayCounter, imageCounter);
+          
+          
+          getIntegerParam(ADNumImagesCounter, &numImagesCounter);
+          numImagesCounter++;
+          setIntegerParam(ADNumImagesCounter, numImagesCounter);
+         
+         /* Put the frame number and time stamp into the buffer */
+        image->uniqueId = imageCounter;
+        image->timeStamp = startTime.secPastEpoch + startTime.nsec / 1.e9;
+        updateTimeStamp(&image->epicsTS);
+    
+    
+     getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
 
         if (arrayCallbacks) {
           /* Call the NDArray callback */
@@ -141,7 +177,7 @@ void germaniumStrip::geTask()
           this->unlock();
           asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
                     "%s:%s: calling imageData callback\n", driverName, functionName);
-          doCallbacksGenericPointer(pImage, NDArrayData, 0);
+          doCallbacksGenericPointer(image, NDArrayData, 0);
           this->lock();
         }
 
@@ -149,6 +185,9 @@ void germaniumStrip::geTask()
 
         /* Call the callbacks to update any changes */
         callParamCallbacks();
+        image->release();
+        
+
 
         /* If we are acquiring then sleep for the acquire period minus elapsed time. */
     }//while deamon

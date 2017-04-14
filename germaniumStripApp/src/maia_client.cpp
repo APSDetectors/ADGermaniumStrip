@@ -427,6 +427,7 @@ void maia_client::getOneMessage(
     unsigned int *databuffer, 
     int *num_ints_rcvd,//num ints in mesage
     int *is_meta_nis_data,// 1 for meta, 0 for data
+    int *frame_number,
     unsigned int max_ints//max ints to rcv
     )
 {
@@ -479,27 +480,31 @@ void maia_client::getOneMessage(
                 memcpy(databuffer,metaint,sizeof(int));
                 *num_ints_rcvd=1;
                 *is_meta_nis_data=1;
-
+                *frame_number=*metaint;
                 break;
             }        
             else if (strcmp(topicstr,TOPIC_DATA)==0)
             {                
                 printf("Event data received\n");
-
+                zmq_msg_recv(
+                    topic,
+                    data_socket, 
+                    0);
+                  
+                int *frnum=    zmq_msg_data(topic);
+                
                 numwords = zmq_msg_recv(msg,data_socket,0);
                 numwords=numwords/sizeof(int);
                 void *dataptr = zmq_msg_data(msg);
-                if (numwords<=max_ints)
-                {
-                    memcpy(databuffer,dataptr,numwords*sizeof(int));
-                    *num_ints_rcvd=numwords;
-                    *is_meta_nis_data=0;
-                }
-                else
-                {
-                    *num_ints_rcvd=-1;
-                    *is_meta_nis_data=0;
-                }
+                if (numwords>max_ints)
+                    numwords=max_ints;
+                    
+               
+                memcpy(databuffer,dataptr,numwords*sizeof(int));
+                *num_ints_rcvd=numwords;
+                *is_meta_nis_data=0;
+                *frame_number = *frnum;
+              
                 break;
               
                 

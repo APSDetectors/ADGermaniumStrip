@@ -21,6 +21,8 @@ LIB_SRCS += maia_client.cpp
 
 DBD += germaniumStripSupport.dbd
 
+LIB_LIBS += zmq
+
 include $(ADCORE)/ADApp/commonLibraryMakefile
 
 #=============================
