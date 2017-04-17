@@ -316,6 +316,7 @@ void maia_client::getOneFrameToFile(char *filename, unsigned int maxevents)
     int num_ints_rcvd;
     int is_meta_nis_data;
     unsigned int max_ints;
+    int frame_number;
     
     char fullname[256];
     
@@ -347,11 +348,10 @@ void maia_client::getOneFrameToFile(char *filename, unsigned int maxevents)
             data_buffer, 
             &num_ints_rcvd,//num ints in mesage, -1 on err or no data
             &is_meta_nis_data,// 1 for meta, 0 for data
+            &frame_number,
             max_ints//max ints to rcv
             );
 
-        
-        
         
         if (num_ints_rcvd>0)
         {        
@@ -491,7 +491,7 @@ void maia_client::getOneMessage(
                     data_socket, 
                     0);
                   
-                int *frnum=    zmq_msg_data(topic);
+                int *frnum=    (int*)zmq_msg_data(topic);
                 
                 numwords = zmq_msg_recv(msg,data_socket,0);
                 numwords=numwords/sizeof(int);

@@ -11,7 +11,7 @@ include $(TOP)/configure/CONFIG
 # Create and install (or just install)
 # databases, templates, substitutions like this
 
-DB += simDetector.template
+DB += germaniumStrip.template
 
 #----------------------------------------------------
 # If <anyname>.db template is not named <anyname>*.template add

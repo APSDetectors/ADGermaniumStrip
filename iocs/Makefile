@@ -1,9 +1,8 @@
 TOP = ..
 include $(TOP)/configure/CONFIG
 
-DIRS += simDetectorNoIOC
 ifneq ($(EPICS_LIBCOM_ONLY),YES)
-  DIRS += simDetectorIOC
+  DIRS += gernamiumStripIOC
 endif
 
 include $(TOP)/configure/RULES_TOP

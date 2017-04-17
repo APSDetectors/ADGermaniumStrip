@@ -10,18 +10,22 @@ ifeq (vxWorks,$(findstring vxWorks, $(T_A)))
 CODE_CXXFLAGS=
 endif
 
-PROD_NAME = simDetectorApp
+#PROD_LIBS += zmq
+#PROD_LDFLAGS += -L../../../../../areaDetector-Master/ZMQ/lib -lzmq
+USR_LDFLAGS += -L/home/beams0/TMADDEN/EPICS/ADEpics/synApps_5_5/support/areaDetector-Master/ZMQ/lib -lzmq
+
+PROD_NAME = germaniumStripApp
 PROD_IOC = $(PROD_NAME)
 
 # <name>.dbd will be created from <name>Include.dbd
 DBD += $(PROD_NAME).dbd
-$(PROD_NAME)_DBD += simDetectorSupport.dbd
+$(PROD_NAME)_DBD += germaniumStripSupport.dbd
 
 # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
 PROD_SRCS_DEFAULT += $(PROD_NAME)_registerRecordDeviceDriver.cpp $(PROD_NAME)Main.cpp
 PROD_SRCS_vxWorks += $(PROD_NAME)_registerRecordDeviceDriver.cpp
 
-PROD_LIBS += simDetector
+PROD_LIBS += germaniumStrip
 
 include $(ADCORE)/ADApp/commonDriverMakefile
 

@@ -116,7 +116,7 @@ void germaniumStrip::geTask()
         
         //wait for message.
         
-        getOneMessage(
+        myclient->getOneMessage(
             databuffer, 
             &num_ints_rcvd,//num ints in mesage
             &is_meta_nis_data,// 1 for meta, 0 for data
@@ -209,6 +209,8 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
     int acquiring;
     int imageMode;
     int isconn;
+    bool istat;
+    const char *functionName = "germaniumStrip";
     
     asynStatus status = asynSuccess;
 
@@ -234,12 +236,12 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
         int aa = myclient->read(0);
         printf("Started client, ret %d\n",aa);
         
-         status = (epicsThreadCreate("GeDetTask",
+         istat = (epicsThreadCreate("GeDetTask",
                                 epicsThreadPriorityMedium,
                                 epicsThreadGetStackSize(epicsThreadStackMedium),
                                 (EPICSTHREADFUNC)geTaskC,
                                 this) == NULL);
-        if (status) {
+        if (istat) {
             printf("%s:%s epicsThreadCreate failure for image task\n",
                 driverName, functionName);
 
