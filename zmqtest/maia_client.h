@@ -24,6 +24,10 @@
 #define ZMQ_CNTL_PORT   "5555"
 #define TOPIC_DATA      "data"
 #define TOPIC_META      "meta"
+#define TOPIC_FNUM      "fnum"
+#define TOPIC_STRT      "strt"
+
+
 
 #define MAX_MSG_WORDS 65536
 #define DATA_SOCK_RCV_TIMEOUT_MS 100
@@ -72,10 +76,22 @@ class maia_client{
     void getOneMessage(
         unsigned int *databuffer, 
         int *num_ints_rcvd,//num ints in mesage
-        int *is_meta_nis_data,// 1 for meta, 0 for data
+        int *message_rcv_type,// 
         int *frame_number,
         unsigned int max_ints//max ints to rcv
         );
+
+
+    enum message_type {
+        message_meta,
+        message_data,
+        message_fnum,
+        message_strt,
+        message_undef
+    };
+
+  
+      int dbg_timeout_counter;
 
   
     protected:
@@ -121,7 +137,6 @@ class maia_client{
     
     enum {data_buffer_size = 262144};
     unsigned int data_buffer[262144];
-
 
 
 };

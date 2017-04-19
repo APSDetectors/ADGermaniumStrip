@@ -507,18 +507,43 @@ void *event_publish(void *args)
                 {
                    ev_state = EVST_SEND;
                    printf("Frame Started...\n"); 
-                   numwords = fifo_numwords();
                    
+                   
+                   
+                  
+
+                //
+                // Send "strt" so subscibers to fnum will get this message. 
+                // send frame number after start.
+                //
+                  zmq_msg_init_size(&topic,4);
+                  memcpy(zmq_msg_data(&topic), "strt", 4);
+                  zmq_msg_send(&topic,publisher,ZMQ_SNDMORE);
+
+                  int fnum_ = get_framenum();
+                  memcpy(zmq_msg_data(&topic), &fnum_, 4);
+                  zmq_msg_send(&topic,publisher,0);
+                  zmq_msg_close(&topic);
+
+
                 }
             break;
             
             case EVST_SEND:
               
-                
+              numwords = fifo_numwords();      
               if (numwords > 0) {
+              
+                //
+                // Get num ints, and events(ints/2) in fpga hw fifo
+                //
                   printf("Numwords in FIFO: %d\n",numwords);
                   fifo_getdata(numwords,databuf); 
                   evttot += numwords/2; 
+                //
+                // Printing dbg only
+                //  
+                  
                   if (0)
                       for (i=0;i<numwords;i=i+2) { 
                           printf("%x\t%x\n",databuf[i+0],databuf[i+1]); 
@@ -535,22 +560,41 @@ void *event_publish(void *args)
                           printf("TD: %d\n",td);
                           printf("Timestamp: %u\n",ts);
                       }
+                      
+                //
+                // Send "data" message. This is for subscripbers looking for "data"
+                //  init topic message
+                //      
                   zmq_msg_init_size(&topic,4);
                   memcpy(zmq_msg_data(&topic), "data", 4);
                   zmq_msg_send(&topic,publisher,ZMQ_SNDMORE);
 
-                  int fnum = get_framenum();
-                  memcpy(zmq_msg_data(&topic), &fnum, 4);
-                  zmq_msg_send(&topic,publisher,ZMQ_SNDMORE);
-                  zmq_msg_close(&topic);
-
+                //
+                // init chunk of data message
+                // Send chunk of fpga data events. "data" preceeds this chunk so data subscribers will get it
+                // then close msg
+                //
                   zmq_msg_init_size(&msg,numwords*4);
                   memcpy(zmq_msg_data(&msg), databuf, numwords*4);
                   int size = zmq_msg_send(&msg,publisher,0);
+                  zmq_msg_close(&msg);
                   printf("Bytes Sent: %d\n",size);
                   printf("\n\n"); 
 
-                  zmq_msg_close(&msg);
+                //
+                // Send "fnum" so subscibers to fnum will get this message. 
+                //
+                  memcpy(zmq_msg_data(&topic), "fnum", 4);
+                  zmq_msg_send(&topic,publisher,ZMQ_SNDMORE);
+
+                  int fnum_ = get_framenum();
+                  memcpy(zmq_msg_data(&topic), &fnum_, 4);
+                  zmq_msg_send(&topic,publisher,0);
+                  zmq_msg_close(&topic);
+
+
+
+                  
               }
               numwords = fifo_numwords();
               framestat = check_framestatus();

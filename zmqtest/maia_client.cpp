@@ -33,7 +33,7 @@ maia_client::maia_client() {
 
    is_rcv_waiting=false;
    is_writing_file = false;
-
+    dbg_timeout_counter=0;
 }
 
 
@@ -314,7 +314,7 @@ void maia_client::getOneFrameToFile(char *filename, unsigned int maxevents)
     unsigned int totallen=0;
   
     int num_ints_rcvd;
-    int is_meta_nis_data;
+    int message_rcv_type;
     unsigned int max_ints;
     int frame_number;
     
@@ -347,7 +347,7 @@ void maia_client::getOneFrameToFile(char *filename, unsigned int maxevents)
         getOneMessage(
             data_buffer, 
             &num_ints_rcvd,//num ints in mesage, -1 on err or no data
-            &is_meta_nis_data,// 1 for meta, 0 for data
+            &message_rcv_type,// 1 for meta, 0 for data
             &frame_number,
             max_ints//max ints to rcv
             );
@@ -359,7 +359,7 @@ void maia_client::getOneFrameToFile(char *filename, unsigned int maxevents)
 
           
             
-            if (is_meta_nis_data==1)
+            if (message_rcv_type==1)
             {
                 printf(" meta2\n");
 
@@ -380,7 +380,7 @@ void maia_client::getOneFrameToFile(char *filename, unsigned int maxevents)
 
                 break;
             }        
-            else if (is_meta_nis_data==0)
+            else if (message_rcv_type==0)
             {                
                 printf("Event data received2\n");
 
@@ -426,7 +426,7 @@ void maia_client::getOneFrameToFile(char *filename, unsigned int maxevents)
 void maia_client::getOneMessage(
     unsigned int *databuffer, 
     int *num_ints_rcvd,//num ints in mesage
-    int *is_meta_nis_data,// 1 for meta, 0 for data
+    int *message_rcv_type,// 1 for meta, 0 for data
     int *frame_number,
     unsigned int max_ints//max ints to rcv
     )
@@ -437,12 +437,13 @@ void maia_client::getOneMessage(
     void *msg_content;
 
 
-    int numwords;
+    int numwords,numevents;
+    
     is_rcv_waiting=true;
     printf(" to zmq_msg_recv\n");
     
     *num_ints_rcvd=-1;
-    *is_meta_nis_data=0;
+    *message_rcv_type=0;
     
     while(is_rcv_waiting)
     {
@@ -453,7 +454,6 @@ void maia_client::getOneMessage(
             data_socket, 
             0);
         
-      
         if (rcv_stat!=-1)
         {        
             printf(" done zmq_msg_recv\n");
@@ -479,22 +479,21 @@ void maia_client::getOneMessage(
                 metaint =  (unsigned int*)zmq_msg_data(msg);  
                 memcpy(databuffer,metaint,sizeof(int));
                 *num_ints_rcvd=1;
-                *is_meta_nis_data=1;
+                *message_rcv_type=message_meta;
                 *frame_number=*metaint;
                 break;
             }        
             else if (strcmp(topicstr,TOPIC_DATA)==0)
-            {                
+            {   
+                //
+                // we received topic "data"
+                // now receive chubnk of ints. copy into output buffer.
+                //             
                 printf("Event data received\n");
-                zmq_msg_recv(
-                    topic,
-                    data_socket, 
-                    0);
-                  
-                int *frnum=    (int*)zmq_msg_data(topic);
+              
                 
-                numwords = zmq_msg_recv(msg,data_socket,0);
-                numwords=numwords/sizeof(int);
+                numwords = zmq_msg_recv(msg,data_socket,0) / sizeof(int);
+                
                 void *dataptr = zmq_msg_data(msg);
                 if (numwords>max_ints)
                     numwords=max_ints;
@@ -502,24 +501,62 @@ void maia_client::getOneMessage(
                
                 memcpy(databuffer,dataptr,numwords*sizeof(int));
                 *num_ints_rcvd=numwords;
-                *is_meta_nis_data=0;
-                *frame_number = *frnum;
+                *message_rcv_type=message_data;
+                *frame_number = -1;
               
+            
                 break;
               
                 
 
-            }  //   if (strcmp(msg_address,TOPIC_DATA)
+            }  //   if (strcmp(msg_address,TOPIC_DATA)            
+            else if (strcmp(topicstr,TOPIC_FNUM)==0)
+            {   
+                //
+                // latest server should send "fnum" topuc after "data" topuic. so listen for it.
+                // 
+               numwords = zmq_msg_recv(msg,data_socket,0)/sizeof(int);
+
+               
+                  
+               int *frnum=    (int*)zmq_msg_data(topic);
+                *num_ints_rcvd=numwords;
+                *message_rcv_type=message_fnum;
+                *frame_number = *frnum;
+                
+            }
+            else if (strcmp(topicstr,TOPIC_STRT)==0)
+            {   
+                //
+                // latest server should send "fnum" topuc after "data" topuic. so listen for it.
+                // 
+               numwords = zmq_msg_recv(msg,data_socket,0)/sizeof(int);
+
+               
+                  
+               int *frnum=    (int*)zmq_msg_data(topic);
+                *num_ints_rcvd=numwords;
+                *message_rcv_type=message_strt;
+                *frame_number = *frnum;
+                
+            }
             else
             {
                 printf("Unexpected topic %s\n",topicstr);
                 *num_ints_rcvd=-1;
-                *is_meta_nis_data=0;
+                *message_rcv_type=message_undef;
                 
             }
         }//if rcv_stat
+        else
+        {
+               // printf("timeout \n");
+               dbg_timeout_counter++;
+
+        }
     }//while
    
+   printf(" leaing get One message \n");
     
       
 }

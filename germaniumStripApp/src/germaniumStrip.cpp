@@ -83,7 +83,7 @@ void germaniumStrip::geTask()
     double elapsedTime;
     const char *functionName = "geTask";
 
-    this->lock();
+    //this->lock();
     /* Loop forever */
     
     myclient->initDataclient();
@@ -99,12 +99,13 @@ void germaniumStrip::geTask()
         
         //!! this should not be hard coded...
         int ndims = 1;
-        size_t dims[1];
+        size_t dims[3];
         dims[0] = 65536;
         
         NDArray *image;
         
-        this->pNDArrayPool->alloc(ndims,dims, NDUInt32, 0, image);
+        printf("to alloc  \n");
+        image = this->pNDArrayPool->alloc(ndims,dims, NDUInt32, 0, NULL);
         unsigned int*databuffer = (unsigned int*)image->pData;
         
         
@@ -115,6 +116,8 @@ void germaniumStrip::geTask()
         unsigned int max_ints=65536;
         
         //wait for message.
+         printf("to  myclient->getOneMessage \n");
+
         
         myclient->getOneMessage(
             databuffer, 
@@ -128,7 +131,10 @@ void germaniumStrip::geTask()
     
         //NDAttribute (const char *pName, const char *pDescription, NDAttrSource_t sourceType, const char *pSource, NDAttrDataType_t dataType, void *pValue)
     
-               
+         printf("done  myclient->getOneMessage  \n");      
+         
+         printf("to  image->pAttributeList->add \n");
+         
         //add new attr to img, if not already there. if there, it updates values         
         image->pAttributeList->add(
             "maia_frame_number", 
@@ -153,6 +159,9 @@ void germaniumStrip::geTask()
              &num_events);
       
          
+         
+         printf("to  getIntegerParam(NDArrayCounter \n");
+         
          getIntegerParam(NDArrayCounter, &imageCounter);
           imageCounter++;
           setIntegerParam(NDArrayCounter, imageCounter);
@@ -162,9 +171,13 @@ void germaniumStrip::geTask()
           numImagesCounter++;
           setIntegerParam(ADNumImagesCounter, numImagesCounter);
          
+         
+        
          /* Put the frame number and time stamp into the buffer */
         image->uniqueId = imageCounter;
         image->timeStamp = startTime.secPastEpoch + startTime.nsec / 1.e9;
+        
+         printf("to  updateTimeStamp \n");
         updateTimeStamp(&image->epicsTS);
     
     
@@ -174,15 +187,17 @@ void germaniumStrip::geTask()
           /* Call the NDArray callback */
           /* Must release the lock here, or we can get into a deadlock, because we can
            * block on the plugin lock, and the plugin can be calling us */
-          this->unlock();
+          //!!this->unlock();
           asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
                     "%s:%s: calling imageData callback\n", driverName, functionName);
+           printf("to  doCallbacksGenericPointer \n");         
           doCallbacksGenericPointer(image, NDArrayData, 0);
-          this->lock();
+         //!! this->lock();
         }
 
      
 
+    printf("to   callParamCallbacks\n");
         /* Call the callbacks to update any changes */
         callParamCallbacks();
         image->release();
@@ -191,8 +206,9 @@ void germaniumStrip::geTask()
 
         /* If we are acquiring then sleep for the acquire period minus elapsed time. */
     }//while deamon
-    
+    printf("to  myclient->destroyData \n");
     myclient->destroyData();
+ //!! this->unlock();
   
 }
 
@@ -212,6 +228,8 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
     bool istat;
     const char *functionName = "germaniumStrip";
     
+    printf("writeInt32  \n");
+    
     asynStatus status = asynSuccess;
 
     /* Ensure that ADStatus is set correctly before we set ADAcquire.*/
@@ -228,7 +246,7 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
 
     if (function==GeConnZMQ && isconn==0)
     {
-    
+        printf("GeConnZMQ  \n");
         setIntegerParam(GeIsConnected,1);
         
         myclient->initCommandClient();
@@ -236,11 +254,16 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
         int aa = myclient->read(0);
         printf("Started client, ret %d\n",aa);
         
+        
+        
          istat = (epicsThreadCreate("GeDetTask",
                                 epicsThreadPriorityMedium,
                                 epicsThreadGetStackSize(epicsThreadStackMedium),
                                 (EPICSTHREADFUNC)geTaskC,
                                 this) == NULL);
+        
+     
+        
         if (istat) {
             printf("%s:%s epicsThreadCreate failure for image task\n",
                 driverName, functionName);
@@ -250,20 +273,29 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
     }
     else if (function==GeDisconnZMQ && isconn==1)
     {
+    
+        printf("GeDisconnZMQ  \n");
         myclient->destroyCtrl();
         is_running_deamon=false;
+        myclient->stopDataWaitRcv();
+        
         setIntegerParam(GeIsConnected,0);
 
     }
-    else if (function==ADAcquire && value==1)
+    else if (function==ADAcquire && value==1 && isconn==1)
     {
+        printf(" ADAcquire \n");
         myclient->startFrame();
     }
    
     
 
-    else if (function < FIRST_GE_DETECTOR_PARAM) status = ADDriver::writeInt32(pasynUser, value);
+    else if (function < FIRST_GE_DETECTOR_PARAM) 
+        status = ADDriver::writeInt32(pasynUser, value);
     
+    
+    
+    printf(" callParamCallbacks \n");
     /* Do callbacks so higher layers see any changes */
     callParamCallbacks();
 
@@ -288,16 +320,29 @@ asynStatus germaniumStrip::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
 {
     int function = pasynUser->reason;
     asynStatus status = asynSuccess;
-
+    int isconn;
+    printf(" writeFloat64 \n");
     /* Set the parameter and readback in the parameter library.  This may be overwritten when we read back the
      * status at the end, but that's OK */
     status = setDoubleParam(function, value);
 
+
+    getIntegerParam(GeIsConnected, &isconn);
+   
+    if (function == ADAcquireTime && isconn==1)
+    {
+    
+            printf("ADAcquireTime  \n");
+
+        myclient->setFrameLen((float)value);
+    }
+    
   
         /* If this parameter belongs to a base class call its method */
-        if (function < FIRST_GE_DETECTOR_PARAM) status = ADDriver::writeFloat64(pasynUser, value);
+        if (function < FIRST_GE_DETECTOR_PARAM) 
+            status = ADDriver::writeFloat64(pasynUser, value);
    
-
+    printf("callParamCallbacks  \n");
     /* Do callbacks so higher layers see any changes */
     callParamCallbacks();
     if (status)
