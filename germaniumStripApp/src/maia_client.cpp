@@ -109,7 +109,21 @@ int maia_client::initDataclient(void)
         ctstr);
         
     //!!assert (rc == 0);
-  
+     zmq_setsockopt(
+        data_socket,
+        ZMQ_SUBSCRIBE,
+        TOPIC_STRT,
+        4);
+
+
+
+
+    zmq_setsockopt(
+        data_socket,
+        ZMQ_SUBSCRIBE,
+        TOPIC_FNUM,
+        4);
+ 
     zmq_setsockopt(
         data_socket,
         ZMQ_SUBSCRIBE, 

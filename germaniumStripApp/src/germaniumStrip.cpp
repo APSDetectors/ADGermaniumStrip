@@ -116,7 +116,7 @@ void germaniumStrip::geTask()
         unsigned int max_ints=65536;
         
         //wait for message.
-         printf("to  myclient->getOneMessage \n");
+        // printf("to  myclient->getOneMessage \n");
 
         
         myclient->getOneMessage(
@@ -131,9 +131,9 @@ void germaniumStrip::geTask()
     
         //NDAttribute (const char *pName, const char *pDescription, NDAttrSource_t sourceType, const char *pSource, NDAttrDataType_t dataType, void *pValue)
     
-         printf("done  myclient->getOneMessage  \n");      
+        // printf("done  myclient->getOneMessage  \n");      
          
-         printf("to  image->pAttributeList->add \n");
+        // printf("to  image->pAttributeList->add \n");
          
         //add new attr to img, if not already there. if there, it updates values         
         image->pAttributeList->add(
@@ -160,7 +160,7 @@ void germaniumStrip::geTask()
       
          
          
-         printf("to  getIntegerParam(NDArrayCounter \n");
+        // printf("to  getIntegerParam(NDArrayCounter \n");
          
          getIntegerParam(NDArrayCounter, &imageCounter);
           imageCounter++;
@@ -177,7 +177,7 @@ void germaniumStrip::geTask()
         image->uniqueId = imageCounter;
         image->timeStamp = startTime.secPastEpoch + startTime.nsec / 1.e9;
         
-         printf("to  updateTimeStamp \n");
+        // printf("to  updateTimeStamp \n");
         updateTimeStamp(&image->epicsTS);
     
     
@@ -197,7 +197,7 @@ void germaniumStrip::geTask()
 
      
 
-    printf("to   callParamCallbacks\n");
+   // printf("to   callParamCallbacks\n");
         /* Call the callbacks to update any changes */
         callParamCallbacks();
         image->release();
@@ -211,6 +211,30 @@ void germaniumStrip::geTask()
  //!! this->unlock();
   
 }
+
+asynStatus germaniumStrip::writeOctet(asynUser *pasynUser, const char *value,
+                                    size_t nChars, size_t *nActual)
+{
+    int addr=0;
+    int function = pasynUser->reason;
+    asynStatus status = asynSuccess;
+    static const char *functionName = "writeOctet";
+
+
+    status = ADDriver::writeOctet(pasynUser, (char*)value, nChars, nActual);
+
+    if (function == GeConnString)
+    {
+    	printf("maia conn str:%s\n",value);
+        myclient->setConnectString((char*)value);
+    }
+
+
+
+    return status;
+}
+
+
 
 
 /** Called when asyn clients call pasynInt32->write().
@@ -464,7 +488,7 @@ germaniumStrip::germaniumStrip(const char *portName, int maxSizeX, int maxSizeY,
     setIntegerParam(GeIsConnected, 0);
 
 
-
+    
 
     myclient= new maia_client();
     

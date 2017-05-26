@@ -145,6 +145,8 @@ class zclient(object):
     ZMQ_CNTL_PORT = "5555"
     TOPIC_DATA = "data"
     TOPIC_META = "meta"
+    TOPIC_STRT = "strt"
+    TOPIC_FNUM = "fnum"
     def __init__(self, connect_str):
         self.context = zmq.Context();
         self.data_sock = self.context.socket(zmq.SUB);
@@ -153,6 +155,8 @@ class zclient(object):
         self.data_sock.connect(connect_str + ":" + zclient.ZMQ_DATA_PORT)
         self.data_sock.setsockopt(zmq.SUBSCRIBE, zclient.TOPIC_DATA)
         self.data_sock.setsockopt(zmq.SUBSCRIBE, zclient.TOPIC_META)
+        self.data_sock.setsockopt(zmq.SUBSCRIBE, zclient.TOPIC_STRT)
+        self.data_sock.setsockopt(zmq.SUBSCRIBE, zclient.TOPIC_FNUM)
 
         self.ctrl_sock.connect(connect_str + ":" + zclient.ZMQ_CNTL_PORT)
 
@@ -234,6 +238,19 @@ class zclient(object):
                 print meta_data
                 np.savetxt("%s.txt"%filename,meta_data,fmt="%x")
                 break
+
+            if (address == zclient.TOPIC_STRT):
+                print "START FRAME received"
+                meta_data = np.frombuffer(msg, dtype=np.uint32)
+                print meta_data
+                break
+            if (address == zclient.TOPIC_FNUM):
+                print "fnum received"
+                meta_data = np.frombuffer(msg, dtype=np.uint32)
+                print meta_data
+                break
+
+
             if (address == zclient.TOPIC_DATA):
                 print "Event data received"
                 data = np.frombuffer(msg, dtype=np.uint32)

@@ -525,7 +525,7 @@ void *event_publish(void *args)
                   zmq_msg_send(&topic,publisher,0);
                   zmq_msg_close(&topic);
 
-
+		 printf("Send strt\n");
                 }
             break;
             
@@ -591,7 +591,7 @@ void *event_publish(void *args)
                   memcpy(zmq_msg_data(&topic), &fnum_, 4);
                   zmq_msg_send(&topic,publisher,0);
                   zmq_msg_close(&topic);
-
+                 printf("Send fnum\n");
 
 
                   

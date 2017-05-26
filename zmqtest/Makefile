@@ -1,7 +1,7 @@
 # the compiler: gcc for C program, define as g++ for C++
 CC = g++
 
-ZMQ = /home/beams0/TMADDEN/EPICS/ADEpics/synApps_5_5/support/areaDetector-Master/ZMQ
+ZMQ = /home/beams0/TMADDEN/swWork/ZMQ
 
 
 # compiler flags:
