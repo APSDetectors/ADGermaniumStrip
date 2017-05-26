@@ -14,7 +14,7 @@ endif
 #zmq_DIR = $(ZMQ_DIR)
 PROD_SYS_LIBS += zmq
 #PROD_LIBS     += zmq
-USR_LDFLAGS += -L/home/beams/TMADDEN/EPICS/ADEpics/synApps_5_5/support/areaDetector-Master/ZMQ/lib
+USR_LDFLAGS += -L/home/beams/TMADDEN/swWork/ZMQ/lib
 
 #USR_LDFLAGS += -L/home/beams0/TMADDEN/EPICS/ADEpics/synApps_5_5/support/areaDetector-Master/ZMQ/lib -lzmq
 
@@ -23,12 +23,16 @@ PROD_IOC = $(PROD_NAME)
 
 # <name>.dbd will be created from <name>Include.dbd
 DBD += $(PROD_NAME).dbd
+
+
+$(PROD_NAME)_DBD += GeDebugpluginSupport.dbd
 $(PROD_NAME)_DBD += germaniumStripSupport.dbd
 
 # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
 PROD_SRCS_DEFAULT += $(PROD_NAME)_registerRecordDeviceDriver.cpp $(PROD_NAME)Main.cpp
 PROD_SRCS_vxWorks += $(PROD_NAME)_registerRecordDeviceDriver.cpp
 
+PROD_LIBS += NDPluginGEDEBUG
 PROD_LIBS += germaniumStrip
 
 include $(ADCORE)/ADApp/commonDriverMakefile

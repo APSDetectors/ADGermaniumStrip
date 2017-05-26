@@ -34,8 +34,14 @@ germaniumStripConfig("$(PORT)", $(XSIZE), $(YSIZE), 1, 0, 0)
 dbLoadRecords("$(ADGERMANIUMSTRIP)/db/germaniumStrip.template","P=$(PREFIX),R=cam1:,PORT=$(PORT),ADDR=0,TIMEOUT=1")
 
 
-# Load an NDFile database.  This is not supported for the germaniumStrip which does not write files.
-#dbLoadRecords("NDFile.template","P=$(PREFIX),R=cam1:,PORT=GER1,ADDR=0,TIMEOUT=1")
+
+NDPluginGeDebugConfigure("GEDEBUG",65536,10000,0,"$(PORT)",0,50,0)
+#dbLoadRecords("NDFile.template","P=$(PREFIX),R=GEDEBUG:,PORT=GEDEBUG,ADDR=0,TIMEOUT=1")
+
+dbLoadRecords("NDStdArrays.template", "P=$(PREFIX),R=GEDEBUG:,PORT=GEDEBUG,ADDR=0,TIMEOUT=1,NDARRAY_PORT=$(PORT),TYPE=Float64,FTVL=DOUBLE,NELEMENTS=12000000")
+
+
+
 
 # Create a standard arrays plugin, set it to get data from first germaniumStrip driver.
 NDStdArraysConfigure("Image1", 3, 0, "$(PORT)", 0)
@@ -46,9 +52,9 @@ dbLoadRecords("NDStdArrays.template", "P=$(PREFIX),R=image1:,PORT=Image1,ADDR=0,
 
 # Load all other plugins using commonPlugins.cmd
 < $(ADCORE)/iocBoot/commonPlugins.cmd
-set_requestfile_path("$(ADGERMANIUMSTRIP)/germaniumStripApp/Db")
+#set_requestfile_path("$(ADGERMANIUMSTRIP)/germaniumStripApp/Db")
 
 iocInit()
 
 # save things every thirty seconds
-create_monitor_set("auto_settings.req", 30, "P=$(PREFIX)")
+#create_monitor_set("auto_settings.req", 30, "P=$(PREFIX)")

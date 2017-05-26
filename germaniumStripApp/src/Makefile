@@ -11,7 +11,7 @@ include $(TOP)/configure/CONFIG
 ifeq (vxWorks,$(findstring vxWorks, $(T_A)))
 CODE_CXXFLAGS=
 endif
-USR_INCLUDES += -I../../../../../areaDetector-Master/ZMQ/include
+USR_INCLUDES += -I /home/beams0/TMADDEN/swWork/ZMQ/include
 
 INC += germaniumStrip.h
 
