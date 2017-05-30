@@ -59,6 +59,10 @@ totallen, bitrate = zc.get_data('test')
 parseFile('test.dat',numbytes=1000000,isprint = False)
 
 
+
+zc.monitor_data()
+
+
 '''
 
 
@@ -217,6 +221,60 @@ class zclient(object):
     def trigger_data(self):
         self.__cntrl_send([0x2, 0x0, 0x0])
         self.__cntrl_recv()
+
+
+
+
+
+
+    def monitor_data2(self):
+
+
+        while True:
+            [address, msg] = self.data_sock.recv_multipart()
+            print '%s'%(address)
+
+
+
+
+
+    def monitor_data(self):
+
+
+        while True:
+            [address, msg] = self.data_sock.recv_multipart()
+
+            if msg == b'END':
+                print "Message END received"
+            if (address == zclient.TOPIC_META):
+                print "Meta data received"
+                meta_data = np.frombuffer(msg, dtype=np.uint32)
+                print meta_data
+
+            if (address == zclient.TOPIC_STRT):
+                print "START FRAME received"
+                meta_data = np.frombuffer(msg, dtype=np.uint32)
+                print meta_data
+            if (address == zclient.TOPIC_FNUM):
+                print "fnum received"
+                meta_data = np.frombuffer(msg, dtype=np.uint32)
+                print meta_data
+
+
+            if (address == zclient.TOPIC_DATA):
+                print "Event data received"
+                data = np.frombuffer(msg, dtype=np.uint32)
+
+
+
+
+
+
+
+
+
+
+
 
 
     def get_data(self, filename, maxevents=-1):

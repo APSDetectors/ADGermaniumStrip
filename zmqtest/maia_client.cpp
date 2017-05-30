@@ -533,7 +533,8 @@ void maia_client::getOneMessage(
 
                
                   
-               int *frnum=    (int*)zmq_msg_data(topic);
+               int *frnum;
+	       frnum=    (int*)zmq_msg_data(msg);
                 *num_ints_rcvd=numwords;
                 *message_rcv_type=message_fnum;
                 *frame_number = *frnum;

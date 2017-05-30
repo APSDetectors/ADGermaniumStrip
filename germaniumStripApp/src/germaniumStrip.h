@@ -44,7 +44,6 @@ protected:
     int current_state;
 
     enum  {
-        st_idle,//wait for start
 	st_start,//got start, alloc image, add attr new frame, goto datafirst
 	st_datafirst, //wait for 1st data of frame, fill dat on frame to st_fnum
 	st_data,//alloc new array, keep current array, imagewait for da 

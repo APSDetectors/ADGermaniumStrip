@@ -82,7 +82,7 @@ class maia_client{
         );
 
 
-    enum message_type {
+    enum  {
         message_meta,
         message_data,
         message_fnum,
