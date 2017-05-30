@@ -537,7 +537,8 @@ void maia_client::getOneMessage(
                 *num_ints_rcvd=numwords;
                 *message_rcv_type=message_fnum;
                 *frame_number = *frnum;
-                
+    		break;
+
             }
             else if (strcmp(topicstr,TOPIC_STRT)==0)
             {   
@@ -552,7 +553,7 @@ void maia_client::getOneMessage(
                 *num_ints_rcvd=numwords;
                 *message_rcv_type=message_strt;
                 *frame_number = *frnum;
-                
+               break; 
             }
             else
             {

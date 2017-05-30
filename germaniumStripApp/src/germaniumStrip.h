@@ -40,6 +40,18 @@ protected:
     int GeLast;  
     #define LAST_GE_DETECTOR_PARAM GeLast
 
+
+    int current_state;
+
+    enum  {
+        st_idle,//wait for start
+	st_start,//got start, alloc image, add attr new frame, goto datafirst
+	st_datafirst, //wait for 1st data of frame, fill dat on frame to st_fnum
+	st_data,//alloc new array, keep current array, imagewait for da 
+	st_fnum//wait for fnum, add fnum attr to array, to st_data
+	};
+
+
 private:
     /* These are the methods that are new to this class */
   

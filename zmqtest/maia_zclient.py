@@ -50,10 +50,12 @@ zc.set_bufsize(10)
 
 
 
-zc.set_framelen(0.2)
+zc.set_framelen(0.02)
 
 zc.start_frame()
+
 totallen, bitrate = zc.get_data('test')
+
 parseFile('test.dat',numbytes=1000000,isprint = False)
 
 
@@ -243,12 +245,10 @@ class zclient(object):
                 print "START FRAME received"
                 meta_data = np.frombuffer(msg, dtype=np.uint32)
                 print meta_data
-                break
             if (address == zclient.TOPIC_FNUM):
                 print "fnum received"
                 meta_data = np.frombuffer(msg, dtype=np.uint32)
                 print meta_data
-                break
 
 
             if (address == zclient.TOPIC_DATA):

@@ -391,7 +391,8 @@ void *fake_detector(void *args)
                 if (fpgabase[REG_STARTFRAME]==1)
                 {
                 
-                    fpgabase[REG_FRAMENUM]++;
+                
+                    fpgabase[FRAMENUMREG]++;
                     fpgabase[FRAMEACTIVEREG]=1;
                     detector_state=ST_FRAME;
                     sim_framelencounter=0;
@@ -521,9 +522,12 @@ void *event_publish(void *args)
                   zmq_msg_send(&topic,publisher,ZMQ_SNDMORE);
 
                   int fnum_ = get_framenum();
-                  memcpy(zmq_msg_data(&topic), &fnum_, 4);
-                  zmq_msg_send(&topic,publisher,0);
+                  zmq_msg_init_size(&msg,4);
+
+                  memcpy(zmq_msg_data(&msg), &fnum_, 4);
+                  zmq_msg_send(&msg,publisher,0);
                   zmq_msg_close(&topic);
+                  zmq_msg_close(&msg);
 
 		 printf("Send strt\n");
                 }
@@ -577,6 +581,8 @@ void *event_publish(void *args)
                   zmq_msg_init_size(&msg,numwords*4);
                   memcpy(zmq_msg_data(&msg), databuf, numwords*4);
                   int size = zmq_msg_send(&msg,publisher,0);
+                  zmq_msg_close(&topic);
+
                   zmq_msg_close(&msg);
                   printf("Bytes Sent: %d\n",size);
                   printf("\n\n"); 
@@ -584,12 +590,17 @@ void *event_publish(void *args)
                 //
                 // Send "fnum" so subscibers to fnum will get this message. 
                 //
+                  zmq_msg_init_size(&topic,4);
+
                   memcpy(zmq_msg_data(&topic), "fnum", 4);
                   zmq_msg_send(&topic,publisher,ZMQ_SNDMORE);
 
                   int fnum_ = get_framenum();
-                  memcpy(zmq_msg_data(&topic), &fnum_, 4);
-                  zmq_msg_send(&topic,publisher,0);
+                  zmq_msg_init_size(&msg,4);
+
+                  memcpy(zmq_msg_data(&msg), &fnum_, 4);
+                  zmq_msg_send(&msg,publisher,0);
+                  zmq_msg_close(&msg);
                   zmq_msg_close(&topic);
                  printf("Send fnum\n");
 
