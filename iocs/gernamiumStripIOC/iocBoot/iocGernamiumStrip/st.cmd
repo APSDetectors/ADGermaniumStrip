@@ -49,7 +49,7 @@ dbLoadRecords("NDPluginGeStripDebug.template","P=$(PREFIX),R=GEDEBUG:,PORT=GEDEB
 NDStdArraysConfigure("Image1", 3, 0, "$(PORT)", 0)
 
 # This waveform allows transporting 64-bit float images
-dbLoadRecords("NDStdArrays.template", "P=$(PREFIX),R=image1:,PORT=Image1,ADDR=0,TIMEOUT=1,NDARRAY_PORT=$(PORT),TYPE=Float64,FTVL=DOUBLE,NELEMENTS=12000000")
+dbLoadRecords("NDStdArrays.template", "P=$(PREFIX),R=image1:,PORT=Image1,ADDR=0,TIMEOUT=1,NDARRAY_PORT=$(PORT),TYPE=Float64,FTVL=DOUBLE,NELEMENTS=65536")
 
 
 # Load all other plugins using commonPlugins.cmd
