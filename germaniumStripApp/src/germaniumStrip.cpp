@@ -67,6 +67,212 @@ static void geTaskC(void *drvPvt)
     pPvt->geTask();
 }
 
+
+void germaniumStrip::geTask2()
+{
+    int status = asynSuccess;
+    int imageCounter;
+    int numImages, numImagesCounter;
+    int imageMode;
+    int arrayCallbacks;
+    int acquire=0;
+    NDArray *pImage;
+    double acquireTime, acquirePeriod, delay;
+    epicsTimeStamp startTime, endTime;
+    double elapsedTime;
+    const char *functionName = "geTask";
+
+    //this->lock();
+    /* Loop forever */
+
+    myclient->initDataclient();
+    is_running_deamon=true;
+
+    NDArray *image;
+
+    NDArray *image2;
+
+    int num_events =0;
+    int num_ints_rcvd=0;
+    int is_meta_nis_data=0;
+    int frame_number=0;
+    unsigned int max_ints=65536;
+    unsigned int*databuffer;
+
+        current_state = st_start;
+    while(is_running_deamon)
+    {
+
+        // frame is a long acq from ge strip det. it makes manuy images. one message from zmq is one image.
+        // each image is around 64 k or less. 100s images per frame.     
+        // we need to associate frame number w/ eqach message. we alter server on maia to send frame nub
+        // every message.
+
+        //!! this should not be hard coded...
+        int ndims = 1;
+        size_t dims[3];
+        dims[0] = 65536;
+
+
+                image = this->pNDArrayPool->alloc(ndims,dims, NDUInt32, 0, NULL);
+                databuffer = (unsigned int*)image->pData;
+                image->pAttributeList->clear();
+
+                myclient->getOneMessage(
+                        databuffer, 
+                        &num_ints_rcvd,//num ints in mesage
+                        &is_meta_nis_data,// 1 for meta, 0 for data
+                        &frame_number,
+                        max_ints//max ints to rcv
+                        );
+
+                printf(" is_meta_nis_data %d\n ",is_meta_nis_data );
+
+                num_events = num_ints_rcvd/2;
+
+                if (is_meta_nis_data==maia_client::message_data)
+                {
+                    //add new attr to img, if not already there. if there, it updates values         
+                    image->pAttributeList->add(
+                            "maia_num_events", 
+                            "num raw events in this image",
+                            NDAttrInt32, 
+                            &num_events);
+
+                    image->pAttributeList->add(
+                            "maia_fnum", 
+                            "current frame number",
+                            NDAttrInt32, 
+                            &current_frame_number);
+
+                    getIntegerParam(NDArrayCounter, &imageCounter);
+                    imageCounter++;
+                    setIntegerParam(NDArrayCounter, imageCounter);
+
+                    getIntegerParam(ADNumImagesCounter, &numImagesCounter);
+                    numImagesCounter++;
+                    setIntegerParam(ADNumImagesCounter, numImagesCounter);
+
+                    /* Put the frame number and time stamp into the buffer */
+                    image->uniqueId = imageCounter;
+                    image->timeStamp = startTime.secPastEpoch + startTime.nsec / 1.e9;
+
+                    // printf("to  updateTimeStamp \n");
+                    updateTimeStamp(&image->epicsTS);
+
+                    getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
+
+                    if (arrayCallbacks) {
+                        /* Call the NDArray callback */
+                        /* Must release the lock here, or we can get into a deadlock, because we can
+                         * block on the plugin lock, and the plugin can be calling us */
+                        //!!this->unlock();
+                        asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
+                                "%s:%s: calling imageData callback\n", driverName, functionName);
+                        printf("to  doCallbacksGenericPointer \n");         
+                        doCallbacksGenericPointer(image, NDArrayData, 0);
+                        //!! this->lock();
+                    }
+
+                    // printf("to   callParamCallbacks\n");
+                    /* Call the callbacks to update any changes */
+                    callParamCallbacks();
+                    image->release();
+		}
+
+                if (is_meta_nis_data == maia_client::message_meta)
+                {
+                    if (is_meta_nis_data==maia_client::message_fnum)
+                    {
+                    printf("Got FNUM\n");
+                    //add new attr to img, if not already there. if there, it updates values         
+                        image->pAttributeList->add(
+                                "maia_fnum", 
+                                "frame number of data, more data coming",
+                                NDAttrInt32, 
+                                &frame_number);
+                    
+                    
+                        current_state = st_data;
+                    }
+                    else
+                    {
+                     
+                        printf("Got META\n");
+                        image->pAttributeList->add(
+                                "maia_meta", 
+                                "NO more data, this is last message",
+                                NDAttrInt32, 
+                                &frame_number);
+
+                    current_state = st_start;
+                    }
+
+                    getIntegerParam(NDArrayCounter, &imageCounter);
+                    imageCounter++;
+                    setIntegerParam(NDArrayCounter, imageCounter);
+
+                    getIntegerParam(ADNumImagesCounter, &numImagesCounter);
+                    numImagesCounter++;
+                    setIntegerParam(ADNumImagesCounter, numImagesCounter);
+
+                    /* Put the frame number and time stamp into the buffer */
+                    image->uniqueId = imageCounter;
+                    image->timeStamp = startTime.secPastEpoch + startTime.nsec / 1.e9;
+
+                    // printf("to  updateTimeStamp \n");
+                    updateTimeStamp(&image->epicsTS);
+
+                    getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
+
+                    if (arrayCallbacks) {
+                        /* Call the NDArray callback */
+                        /* Must release the lock here, or we can get into a deadlock, because we can
+                         * block on the plugin lock, and the plugin can be calling us */
+                        //!!this->unlock();
+                        asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
+                                "%s:%s: calling imageData callback\n", driverName, functionName);
+                        printf("to  doCallbacksGenericPointer \n");         
+                        doCallbacksGenericPointer(image, NDArrayData, 0);
+                        //!! this->lock();
+                    }
+
+                    // printf("to   callParamCallbacks\n");
+                    /* Call the callbacks to update any changes */
+                    callParamCallbacks();
+                    image->release();
+
+
+                    if (is_meta_nis_data==maia_client::message_fnum)
+                    {
+                        image = this->pNDArrayPool->alloc(ndims,dims, NDUInt32, 0, NULL);
+                        databuffer = (unsigned int*)image->pData;
+
+                       image->pAttributeList->clear();
+                    }
+
+                }
+                else
+                {
+                    printf("ERROR-0 expected fnum or meta. \n");
+                    current_state = st_start;
+                    this->pNDArrayPool->release(image);
+                    break;
+                }
+                break;
+        }
+
+    }//while deamon
+    printf("to  myclient->destroyData \n");
+    myclient->destroyData();
+    //!! this->unlock();
+}
+
+
+
+
+
+
 /** This thread calls computeImage to compute new image data and does the callbacks to send it to higher layers.
  * It implements the logic for single, multiple or continuous acquisition. */
 void germaniumStrip::geTask()
@@ -511,6 +717,7 @@ germaniumStrip::germaniumStrip(const char *portName, int maxSizeX, int maxSizeY,
     char versionString[20];
     const char *functionName = "germaniumStrip";
 
+    current_frame_number=0;
     /* Create the epicsEvents for signaling to the geulate task when acquisition starts and stops */
     startEventId_ = epicsEventCreate(epicsEventEmpty);
     if (!startEventId_) {

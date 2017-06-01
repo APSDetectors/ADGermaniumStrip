@@ -40,6 +40,7 @@ protected:
     int GeLast;  
     #define LAST_GE_DETECTOR_PARAM GeLast
 
+    int current_frame_number;
 
     int current_state;
 
