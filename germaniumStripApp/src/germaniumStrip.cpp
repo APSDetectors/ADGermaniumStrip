@@ -105,7 +105,7 @@ void germaniumStrip::geTask2()
 
         current_state = st_start;
     
-    //printf("=========================\nRunning geTask2, Joe mead ZMQ Server\n=======================\n");
+    printf("=========================\nRunning geTask2, Joe mead ZMQ Server\n=======================\n");
     
     
     while(is_running_deamon)
