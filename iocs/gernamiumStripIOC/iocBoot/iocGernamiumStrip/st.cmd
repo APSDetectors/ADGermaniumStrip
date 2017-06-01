@@ -60,3 +60,9 @@ iocInit()
 
 # save things every thirty seconds
 #create_monitor_set("auto_settings.req", 30, "P=$(PREFIX)")
+
+dbpf GER1:cam1:GeServerType,1
+dbpf GER1:cam1:GeServerString,"tcp://172.16.0.214"
+dbpf GER1:cam1:GeDeleteFirstMessage,1
+dbpf GER1:cam1:GeFrameMode,0
+ 

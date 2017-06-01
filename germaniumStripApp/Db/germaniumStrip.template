@@ -46,7 +46,33 @@ record(mbbi, "$(P)$(R)ColorMode_RBV")
 
 
 
+record(longout, "$(P)$(R)GeDeleteFirstMessage")
+{
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeDeleteFirstMessage")
+}
 
+record(longin, "$(P)$(R)GeDeleteFirstMessage_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeDeleteFirstMessage")
+   field(SCAN, "I/O Intr")
+}
+
+
+
+record(longout, "$(P)$(R)GeFrameMode")
+{
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeFrameMode")
+}
+
+record(longin, "$(P)$(R)GeFrameMode_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeFrameMode")
+   field(SCAN, "I/O Intr")
+}
 
 
 

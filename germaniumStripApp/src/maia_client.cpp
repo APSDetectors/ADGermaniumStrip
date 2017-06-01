@@ -445,7 +445,7 @@ void maia_client::getOneMessage(
     unsigned int max_ints//max ints to rcv
     )
 {
-    printf(" getOneMessage\n");
+    //printf(" getOneMessage\n");
    
  
     void *msg_content;
@@ -454,7 +454,7 @@ void maia_client::getOneMessage(
     int numwords,numevents;
     
     is_rcv_waiting=true;
-    printf(" to zmq_msg_recv\n");
+    //printf(" to zmq_msg_recv\n");
     
     *num_ints_rcvd=-1;
     *message_rcv_type=0;
@@ -470,7 +470,7 @@ void maia_client::getOneMessage(
         
         if (rcv_stat!=-1)
         {        
-            printf(" done zmq_msg_recv\n");
+            //printf(" done zmq_msg_recv\n");
 
             const char *msg_address  = (const char*)zmq_msg_data(topic);
             // we expect 4 chars. make 5th one a 0 to term a c string
@@ -479,11 +479,11 @@ void maia_client::getOneMessage(
             memcpy(topicstr,msg_address,4);
 
 
-            printf("topic %s\n",topicstr);
+            //printf("topic %s\n",topicstr);
             
             if (strcmp(topicstr,TOPIC_META)==0)
             {
-                printf(" meta\n");
+            //    printf(" meta\n");
 
                 numwords = zmq_msg_recv(msg,data_socket,0); 
                 char meta[16];
@@ -503,7 +503,7 @@ void maia_client::getOneMessage(
                 // we received topic "data"
                 // now receive chubnk of ints. copy into output buffer.
                 //             
-                printf("Event data received\n");
+              //  printf("Event data received\n");
               
                 
                 numwords = zmq_msg_recv(msg,data_socket,0) / sizeof(int);
@@ -572,7 +572,7 @@ void maia_client::getOneMessage(
         }
     }//while
    
-   printf(" leaing get One message \n");
+//   printf(" leaing get One message \n");
     
       
 }

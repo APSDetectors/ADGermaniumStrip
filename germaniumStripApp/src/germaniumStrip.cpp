@@ -105,7 +105,7 @@ void germaniumStrip::geTask2()
 
         current_state = st_start;
     
-    printf("=========================\nRunning geTask2, Joe mead ZMQ Server\n=======================\n");
+    //printf("=========================\nRunning geTask2, Joe mead ZMQ Server\n=======================\n");
     
     
     while(is_running_deamon)
@@ -134,7 +134,7 @@ void germaniumStrip::geTask2()
                         max_ints//max ints to rcv
                         );
 
-                printf(" is_meta_nis_data %d\n ",is_meta_nis_data );
+                //printf(" is_meta_nis_data %d\n ",is_meta_nis_data );
 
                 num_events = num_ints_rcvd/2;
 
@@ -169,18 +169,23 @@ void germaniumStrip::geTask2()
                     updateTimeStamp(&image->epicsTS);
 
                     getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
+		    if (is_delete_message==true)
+		    {
+			printf("Deleted 1st Message of old fpga data\n");
+		    }
 
-                    if (arrayCallbacks) {
+                    if (arrayCallbacks && is_delete_message==false) {
                         /* Call the NDArray callback */
                         /* Must release the lock here, or we can get into a deadlock, because we can
                          * block on the plugin lock, and the plugin can be calling us */
                         //!!this->unlock();
                         asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
                                 "%s:%s: calling imageData callback\n", driverName, functionName);
-                        printf("to  doCallbacksGenericPointer \n");         
+                   //     printf("to  doCallbacksGenericPointer \n");         
                         doCallbacksGenericPointer(image, NDArrayData, 0);
                         //!! this->lock();
                     }// if (arrayCallbacks)
+			is_delete_message=false;
 
 		}// if (is_meta_nis_data==maia_client::message_data)
 
@@ -536,6 +541,12 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
     }
     else if (function==ADAcquire && value==1 && isconn==1)
     {
+    	is_delete_message=false;
+	int isdel = 0;
+    	getIntegerParam(GeDeleteFirstMessage, &isdel);
+	if (isdel>0)
+		is_delete_message=true;
+
         printf(" ADAcquire \n");
         myclient->startFrame();
     }
@@ -545,7 +556,19 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
         which_task= value;
     }
 
+    else if (function==GeFrameMode )
+    {
+    	if (value ==0)
+	{
+		myclient->write(220,0);
+        }	
+	else
+	{
 
+		myclient->write(220,1);
+
+	}
+    }
     else if (function < FIRST_GE_DETECTOR_PARAM) 
         status = ADDriver::writeInt32(pasynUser, value);
 
@@ -737,6 +760,15 @@ germaniumStrip::germaniumStrip(const char *portName, int maxSizeX, int maxSizeY,
     setIntegerParam(GeIsConnected, 0);
 
 
+    createParam("GeDeleteFirstMessage",    asynParamInt32, &GeDeleteFirstMessage);
+    createParam("GeFrameMode",    asynParamInt32, &GeFrameMode);
+    setIntegerParam(GeDeleteFirstMessage, 0);
+    setIntegerParam(GeFrameMode, 0);
+    
+    
+	is_delete_message=false;    
+    
+    
     createParam("GeServerType",    asynParamInt32, &GeServerType);
 
     setIntegerParam( GeServerType,0);

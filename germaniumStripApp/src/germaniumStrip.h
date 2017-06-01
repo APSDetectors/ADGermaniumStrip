@@ -41,7 +41,8 @@ protected:
     int GeConnString;
     int GeIsConnected;
     int GeServerType; //0 for new, 1 for old. new has fnum and strt messages. old is from joe mead, only data and meta    
-    
+    int GeDeleteFirstMessage; //1 to throw 1st imag of frame. it is prob old foga fifo data.
+    int GeFrameMode; //reg 220dec, 0 for normal, 1 for debug, or run forever.
     
     int GeLast;  
     #define LAST_GE_DETECTOR_PARAM GeLast
@@ -67,7 +68,9 @@ private:
     NDArray *pRaw_;
     
     maia_client *myclient;
-  
+
+	bool is_delete_message;
+
     #define DEFAULT_ZMQ_CONN_STR "tcp://127.0.0.1"
     bool is_running_deamon;
     
