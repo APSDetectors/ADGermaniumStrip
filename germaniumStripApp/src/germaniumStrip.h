@@ -26,7 +26,13 @@ public:
     virtual void report(FILE *fp, int details);
     void geTask(); /**< Should be private, but gets called from C, so must be public */
 
+    void geTask2();
+
+    //0 for geTask, 1 for geTash2
+    int getWhichTask();
 protected:
+    int which_task;
+
     int GeFirst;
     #define FIRST_GE_DETECTOR_PARAM GeFirst
     
@@ -34,7 +40,7 @@ protected:
     int GeDisconnZMQ;
     int GeConnString;
     int GeIsConnected;
-    
+    int GeServerType; //0 for new, 1 for old. new has fnum and strt messages. old is from joe mead, only data and meta    
     
     
     int GeLast;  

@@ -93,7 +93,7 @@ int maia_client::initCommandClient(void)
     }
      printf("initCommandClient done: %s \n",ctstr);
 
-
+    return(rc);
 }
 
 int maia_client::initDataclient(void)

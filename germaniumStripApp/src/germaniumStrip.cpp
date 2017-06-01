@@ -64,7 +64,11 @@ static void geTaskC(void *drvPvt)
 {
     germaniumStrip *pPvt = (germaniumStrip *)drvPvt;
 
-    pPvt->geTask();
+    if (pPvt->getWhichTask()==0)
+        pPvt->geTask();
+    else
+        pPvt->geTask2();
+
 }
 
 
@@ -100,6 +104,10 @@ void germaniumStrip::geTask2()
     unsigned int*databuffer;
 
         current_state = st_start;
+    
+    printf("=========================\nRunning geTask2, Joe mead ZMQ Server\n=======================\n");
+    
+    
     while(is_running_deamon)
     {
 
@@ -172,95 +180,21 @@ void germaniumStrip::geTask2()
                         printf("to  doCallbacksGenericPointer \n");         
                         doCallbacksGenericPointer(image, NDArrayData, 0);
                         //!! this->lock();
-                    }
+                    }// if (arrayCallbacks)
 
-                    // printf("to   callParamCallbacks\n");
-                    /* Call the callbacks to update any changes */
-                    callParamCallbacks();
-                    image->release();
-		}
+		}// if (is_meta_nis_data==maia_client::message_data)
 
-                if (is_meta_nis_data == maia_client::message_meta)
+                else if(is_meta_nis_data == maia_client::message_meta)
                 {
-                    if (is_meta_nis_data==maia_client::message_fnum)
-                    {
-                    printf("Got FNUM\n");
-                    //add new attr to img, if not already there. if there, it updates values         
-                        image->pAttributeList->add(
-                                "maia_fnum", 
-                                "frame number of data, more data coming",
-                                NDAttrInt32, 
-                                &frame_number);
-                    
-                    
-                        current_state = st_data;
-                    }
-                    else
-                    {
-                     
-                        printf("Got META\n");
-                        image->pAttributeList->add(
-                                "maia_meta", 
-                                "NO more data, this is last message",
-                                NDAttrInt32, 
-                                &frame_number);
-
-                    current_state = st_start;
-                    }
-
-                    getIntegerParam(NDArrayCounter, &imageCounter);
-                    imageCounter++;
-                    setIntegerParam(NDArrayCounter, imageCounter);
-
-                    getIntegerParam(ADNumImagesCounter, &numImagesCounter);
-                    numImagesCounter++;
-                    setIntegerParam(ADNumImagesCounter, numImagesCounter);
-
-                    /* Put the frame number and time stamp into the buffer */
-                    image->uniqueId = imageCounter;
-                    image->timeStamp = startTime.secPastEpoch + startTime.nsec / 1.e9;
-
-                    // printf("to  updateTimeStamp \n");
-                    updateTimeStamp(&image->epicsTS);
-
-                    getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
-
-                    if (arrayCallbacks) {
-                        /* Call the NDArray callback */
-                        /* Must release the lock here, or we can get into a deadlock, because we can
-                         * block on the plugin lock, and the plugin can be calling us */
-                        //!!this->unlock();
-                        asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
-                                "%s:%s: calling imageData callback\n", driverName, functionName);
-                        printf("to  doCallbacksGenericPointer \n");         
-                        doCallbacksGenericPointer(image, NDArrayData, 0);
-                        //!! this->lock();
-                    }
-
-                    // printf("to   callParamCallbacks\n");
-                    /* Call the callbacks to update any changes */
-                    callParamCallbacks();
-                    image->release();
-
-
-                    if (is_meta_nis_data==maia_client::message_fnum)
-                    {
-                        image = this->pNDArrayPool->alloc(ndims,dims, NDUInt32, 0, NULL);
-                        databuffer = (unsigned int*)image->pData;
-
-                       image->pAttributeList->clear();
-                    }
-
+                     current_frame_number= frame_number+1;
                 }
                 else
                 {
                     printf("ERROR-0 expected fnum or meta. \n");
-                    current_state = st_start;
-                    this->pNDArrayPool->release(image);
-                    break;
                 }
-                break;
-        }
+        
+               image->release();
+               callParamCallbacks();
 
     }//while deamon
     printf("to  myclient->destroyData \n");
@@ -306,6 +240,7 @@ void germaniumStrip::geTask()
     unsigned int max_ints=65536;
     unsigned int*databuffer;
 
+    printf("=========================\nRunning geTask,Madden/Mead Server \n=======================\n");
         current_state = st_start;
     while(is_running_deamon)
     {
@@ -557,10 +492,12 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
     if (function==GeConnZMQ && isconn==0)
     {
         printf("GeConnZMQ  \n");
-        setIntegerParam(GeIsConnected,1);
 
-        myclient->initCommandClient();
-        printf("To read \n");
+        int stat = myclient->initCommandClient();
+        if (stat==0)
+	{
+	printf("To read \n");
+        setIntegerParam(GeIsConnected,1);
         int aa = myclient->read(0);
         printf("Started client, ret %d\n",aa);
 
@@ -579,6 +516,11 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
                     driverName, functionName);
 
         }
+	}
+	else
+	{
+		printf("ERROR could not connect to zmq server\n");
+	}
 
     }
     else if (function==GeDisconnZMQ && isconn==1)
@@ -598,6 +540,10 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
         myclient->startFrame();
     }
 
+    else if (function==GeServerType )
+    {
+        which_task= value;
+    }
 
 
     else if (function < FIRST_GE_DETECTOR_PARAM) 
@@ -666,7 +612,17 @@ asynStatus germaniumStrip::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
     return status;
 }
 
-
+/*
+ *
+ *
+ *
+ */
+
+int germaniumStrip::getWhichTask()
+{
+   return(which_task);
+}
+
 /** Report status of the driver.
  * Prints details about the driver if details>0.
  * It then calls the ADDriver::report() method.
@@ -716,6 +672,12 @@ germaniumStrip::germaniumStrip(const char *portName, int maxSizeX, int maxSizeY,
     int status = asynSuccess;
     char versionString[20];
     const char *functionName = "germaniumStrip";
+
+
+
+    which_task=0;
+
+
 
     current_frame_number=0;
     /* Create the epicsEvents for signaling to the geulate task when acquisition starts and stops */
@@ -775,7 +737,9 @@ germaniumStrip::germaniumStrip(const char *portName, int maxSizeX, int maxSizeY,
     setIntegerParam(GeIsConnected, 0);
 
 
+    createParam("GeServerType",    asynParamInt32, &GeServerType);
 
+    setIntegerParam( GeServerType,0);
 
     myclient= new maia_client();
 
