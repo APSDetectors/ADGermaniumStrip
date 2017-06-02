@@ -44,6 +44,8 @@ dbLoadRecords("NDPluginGeStripDebug.template","P=$(PREFIX),R=GEDEBUG:,PORT=GEDEB
 
 
 
+NDFileGeConfigure("GEFILE",10000000,300,0,"$(PORT)",50,0)
+dbLoadRecords("$(GEFILE)/NDFileGeApp/Db/NDFileGe.template","P=$(PREFIX),R=GEFILE:,PORT=GEFILE,NDARRAY_PORT=$(PORT),ADDR=0,TIMEOUT=1")
 
 # Create a standard arrays plugin, set it to get data from first germaniumStrip driver.
 NDStdArraysConfigure("Image1", 3, 0, "$(PORT)", 0)

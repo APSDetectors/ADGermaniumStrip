@@ -2,6 +2,9 @@ epicsEnvSet("ARCH","linux-x86_64")
 epicsEnvSet("IOC","iocGernamiumStrip")
 epicsEnvSet("TOP","/home/beams0/TMADDEN/EPICS/ADEpics/synApps_5_5/support/areaDetector-R3-0/ADGernamiumStrip/iocs/gernamiumStripIOC")
 epicsEnvSet("ADGERMANIUMSTRIP","/home/beams0/TMADDEN/EPICS/ADEpics/synApps_5_5/support/areaDetector-R3-0/ADGernamiumStrip/iocs/gernamiumStripIOC/../..")
+
+
+epicsEnvSet("GEFILE","/home/beams0/TMADDEN/EPICS/ADEpics/synApps_5_5/support/areaDetector-R3-0/NDPluginFileGe")
 epicsEnvSet("SUPPORT","/home/beams0/TMADDEN/EPICS/ADEpics/synApps_5_5/support")
 epicsEnvSet("AREA_DETECTOR","/home/beams0/TMADDEN/EPICS/ADEpics/synApps_5_5/support/areaDetector-R3-0")
 epicsEnvSet("EPICS_BASE","/home/beams0/TMADDEN/EPICS/base-3.14.12.5")

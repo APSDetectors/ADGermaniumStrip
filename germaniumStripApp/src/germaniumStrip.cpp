@@ -153,6 +153,18 @@ void germaniumStrip::geTask2()
                             NDAttrInt32, 
                             &current_frame_number);
 
+
+/*
+    int GeNumEvents;
+    int GeFrameNumber;
+    int GeMessageType;
+    int GeEventRate;
+*/
+                    setIntegerParam(GeFrameNumber, current frame number);
+                    setIntegerParam(GeNumEvents,num_events );
+                    setIntegerParam(GeMessageType,is_meta_nis_data );
+ //                   setIntegerParam(, );
+
                     getIntegerParam(NDArrayCounter, &imageCounter);
                     imageCounter++;
                     setIntegerParam(NDArrayCounter, imageCounter);
