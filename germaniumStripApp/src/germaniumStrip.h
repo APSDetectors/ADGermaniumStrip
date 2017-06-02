@@ -2,6 +2,7 @@
 #include "ADDriver.h"
 
 #include "maia_client.h"
+#include "stopWatch.h"
 
 #define DRIVER_VERSION      0
 #define DRIVER_REVISION     0
@@ -62,6 +63,8 @@ protected:
 	st_data,//alloc new array, keep current array, imagewait for da 
 	st_fnum//wait for fnum, add fnum attr to array, to st_data
 	};
+
+	stopWatch *myclock;
 
 
 private:

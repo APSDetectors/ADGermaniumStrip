@@ -137,6 +137,13 @@ void germaniumStrip::geTask2()
                 //printf(" is_meta_nis_data %d\n ",is_meta_nis_data );
 
                 num_events = num_ints_rcvd/2;
+/*
+ *cd /local/gsd64/python/
+ ./maia_zclient.py 1000000 /local/madden/data/pydata1.dat
+ *
+ *cd /local/madden
+ *./qtGSD_GUI.py
+ */
 
                 if (is_meta_nis_data==maia_client::message_data)
                 {
@@ -154,18 +161,21 @@ void germaniumStrip::geTask2()
                             &current_frame_number);
 
 
-/*
-    int GeNumEvents;
-    int GeFrameNumber;
-    int GeMessageType;
-    int GeEventRate;
-*/
-                    setIntegerParam(GeFrameNumber, current frame number);
+                    setIntegerParam(GeFrameNumber, current_frame_number);
                     setIntegerParam(GeNumEvents,num_events );
                     setIntegerParam(GeMessageType,is_meta_nis_data );
  //                   setIntegerParam(, );
 
-                    getIntegerParam(NDArrayCounter, &imageCounter);
+
+		    double elapsedtime = myclock->toc();
+
+		    double eventrate = ((double)num_events)/elapsedtime;
+		    setDoubleParam(GeEventRate,eventrate);
+
+		    myclock->tic();
+
+
+		    getIntegerParam(NDArrayCounter, &imageCounter);
                     imageCounter++;
                     setIntegerParam(NDArrayCounter, imageCounter);
 
@@ -708,6 +718,7 @@ germaniumStrip::germaniumStrip(const char *portName, int maxSizeX, int maxSizeY,
     char versionString[20];
     const char *functionName = "germaniumStrip";
 
+	myclock = new stopWatch();
 
 
     which_task=0;
@@ -777,8 +788,21 @@ germaniumStrip::germaniumStrip(const char *portName, int maxSizeX, int maxSizeY,
     setIntegerParam(GeDeleteFirstMessage, 0);
     setIntegerParam(GeFrameMode, 0);
     
+    createParam("GeNumEvents",    asynParamInt32, &GeNumEvents);
+    createParam("GeFrameNumber",    asynParamInt32, &GeFrameNumber);
+    createParam("GeMessageType",    asynParamInt32, &GeMessageType);
+    createParam("GeEventRate",    asynParamFloat64, &GeEventRate);
+
     
-	is_delete_message=false;    
+    setIntegerParam(GeNumEvents, 0);
+    setIntegerParam(GeFrameNumber, 0);
+    setIntegerParam(GeMessageType, 0);
+    setDoubleParam(GeEventRate ,0.0);
+
+    myclock->tic();
+
+
+is_delete_message=false;    
     
     
     createParam("GeServerType",    asynParamInt32, &GeServerType);
