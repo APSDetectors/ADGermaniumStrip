@@ -49,6 +49,7 @@ protected:
     int GeMessageType;
     int GeEventRate;
 
+      int GeMessNumber;
 
     int GeLast;  
     #define LAST_GE_DETECTOR_PARAM GeLast

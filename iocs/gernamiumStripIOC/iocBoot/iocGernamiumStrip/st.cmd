@@ -64,7 +64,7 @@ iocInit()
 #create_monitor_set("auto_settings.req", 30, "P=$(PREFIX)")
 
 dbpf GER1:cam1:GeServerType,1
-dbpf GER1:cam1:GeServerString,"tcp://172.16.0.214"
-dbpf GER1:cam1:GeDeleteFirstMessage,1
+dbpf GER1:cam1:GeServerString,"tcp://127.0.0.1"
+dbpf GER1:cam1:GeDeleteFirstMessage,0
 dbpf GER1:cam1:GeFrameMode,0
  

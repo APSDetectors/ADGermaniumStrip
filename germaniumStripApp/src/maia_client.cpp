@@ -34,6 +34,7 @@ maia_client::maia_client() {
    is_rcv_waiting=false;
    is_writing_file = false;
     dbg_timeout_counter=0;
+    which_subscribe=1;
 }
 
 
@@ -96,6 +97,12 @@ int maia_client::initCommandClient(void)
     return(rc);
 }
 
+void maia_client::subscribe(int which)
+{
+    which_subscribe = which;
+
+}
+
 int maia_client::initDataclient(void)
 {
     char ctstr[256];
@@ -108,6 +115,8 @@ int maia_client::initDataclient(void)
         data_socket,
         ctstr);
         
+	if (which_subscribe>0)
+	{
     //!!assert (rc == 0);
      zmq_setsockopt(
         data_socket,
@@ -115,7 +124,7 @@ int maia_client::initDataclient(void)
         TOPIC_STRT,
         4);
 
-
+	
 
 
     zmq_setsockopt(
@@ -123,7 +132,9 @@ int maia_client::initDataclient(void)
         ZMQ_SUBSCRIBE,
         TOPIC_FNUM,
         4);
- 
+ 	}
+
+
     zmq_setsockopt(
         data_socket,
         ZMQ_SUBSCRIBE, 

@@ -81,6 +81,8 @@ class maia_client{
         unsigned int max_ints//max ints to rcv
         );
 
+    void subscribe(int a);
+
 
     enum  {
         message_meta,
@@ -96,6 +98,7 @@ class maia_client{
   
     protected:
     
+	int which_subscribe;
     
     enum fpga_cmds {
         CMD_REG_READ = 0,

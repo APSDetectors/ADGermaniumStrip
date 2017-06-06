@@ -74,27 +74,21 @@ static void geTaskC(void *drvPvt)
 
 void germaniumStrip::geTask2()
 {
-    int status = asynSuccess;
     int imageCounter;
-    int numImages, numImagesCounter;
-    int imageMode;
+    int  numImagesCounter;
     int arrayCallbacks;
-    int acquire=0;
-    NDArray *pImage;
-    double acquireTime, acquirePeriod, delay;
-    epicsTimeStamp startTime, endTime;
-    double elapsedTime;
+    epicsTimeStamp startTime ;
     const char *functionName = "geTask";
 
     //this->lock();
     /* Loop forever */
+    myclient->subscribe(0);
 
     myclient->initDataclient();
     is_running_deamon=true;
 
     NDArray *image;
 
-    NDArray *image2;
 
     int num_events =0;
     int num_ints_rcvd=0;
@@ -144,6 +138,14 @@ void germaniumStrip::geTask2()
  *cd /local/madden
  *./qtGSD_GUI.py
  */
+
+		int gmn;
+		getIntegerParam(GeMessNumber,&gmn);
+		printf("Message Num %d, MessLen %d \n",gmn,num_ints_rcvd);
+
+		gmn++;
+		setIntegerParam(GeMessNumber,gmn);
+
 
                 if (is_meta_nis_data==maia_client::message_data)
                 {
@@ -238,27 +240,21 @@ void germaniumStrip::geTask2()
  * It implements the logic for single, multiple or continuous acquisition. */
 void germaniumStrip::geTask()
 {
-    int status = asynSuccess;
     int imageCounter;
-    int numImages, numImagesCounter;
-    int imageMode;
+    int  numImagesCounter;
     int arrayCallbacks;
-    int acquire=0;
-    NDArray *pImage;
-    double acquireTime, acquirePeriod, delay;
-    epicsTimeStamp startTime, endTime;
-    double elapsedTime;
+    epicsTimeStamp startTime ;
     const char *functionName = "geTask";
 
     //this->lock();
     /* Loop forever */
 
+    myclient->subscribe(1);
     myclient->initDataclient();
     is_running_deamon=true;
 
     NDArray *image;
 
-    NDArray *image2;
 
     int num_events =0;
     int num_ints_rcvd=0;
@@ -463,10 +459,8 @@ void germaniumStrip::geTask()
 asynStatus germaniumStrip::writeOctet(asynUser *pasynUser, const char *value,
         size_t nChars, size_t *nActual)
 {
-    int addr=0;
     int function = pasynUser->reason;
     asynStatus status = asynSuccess;
-    static const char *functionName = "writeOctet";
 
 
     status = ADDriver::writeOctet(pasynUser, (char*)value, nChars, nActual);
@@ -563,7 +557,9 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
     }
     else if (function==ADAcquire && value==1 && isconn==1)
     {
-    	is_delete_message=false;
+
+	setIntegerParam(GeMessNumber,0);
+         is_delete_message=false;
 	int isdel = 0;
     	getIntegerParam(GeDeleteFirstMessage, &isdel);
 	if (isdel>0)
@@ -793,11 +789,14 @@ germaniumStrip::germaniumStrip(const char *portName, int maxSizeX, int maxSizeY,
     createParam("GeMessageType",    asynParamInt32, &GeMessageType);
     createParam("GeEventRate",    asynParamFloat64, &GeEventRate);
 
+    createParam("GeMessNumber",    asynParamInt32, &GeMessNumber);
     
     setIntegerParam(GeNumEvents, 0);
     setIntegerParam(GeFrameNumber, 0);
     setIntegerParam(GeMessageType, 0);
     setDoubleParam(GeEventRate ,0.0);
+
+    setIntegerParam(GeMessNumber, 0);
 
     myclock->tic();
 
