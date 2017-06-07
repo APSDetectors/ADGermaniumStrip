@@ -71,6 +71,25 @@ static void geTaskC(void *drvPvt)
 
 }
 
+static void geTaskC2(void *drvPvt)
+{
+    germaniumStrip *pPvt = (germaniumStrip *)drvPvt;
+
+        pPvt->geTimeTask();
+
+}
+
+void germaniumStrip::geTimeTask()
+{
+    printf("\nRunning timer Task\n");
+    while(1)
+   {
+        epicsThreadSleep(0.1);
+
+        this->elapsedtime +=0.1;
+    }
+}
+
 
 void germaniumStrip::geTask2()
 {
@@ -97,11 +116,15 @@ void germaniumStrip::geTask2()
     unsigned int max_ints=65536;
     unsigned int*databuffer;
 
-        current_state = st_start;
-    
+    int gte;
+    int gmn;
+    current_state = st_start;
+
     printf("=========================\nRunning geTask2, Joe mead ZMQ Server\n=======================\n");
-    
-    
+
+
+    setIntegerParam(GeIsConnected,1);
+    callParamCallbacks();
     while(is_running_deamon)
     {
 
@@ -116,118 +139,122 @@ void germaniumStrip::geTask2()
         dims[0] = 65536;
 
 
-                image = this->pNDArrayPool->alloc(ndims,dims, NDUInt32, 0, NULL);
-                databuffer = (unsigned int*)image->pData;
-                image->pAttributeList->clear();
+        image = this->pNDArrayPool->alloc(ndims,dims, NDUInt32, 0, NULL);
+        databuffer = (unsigned int*)image->pData;
+        image->pAttributeList->clear();
 
-                myclient->getOneMessage(
-                        databuffer, 
-                        &num_ints_rcvd,//num ints in mesage
-                        &is_meta_nis_data,// 1 for meta, 0 for data
-                        &frame_number,
-                        max_ints//max ints to rcv
-                        );
+        myclient->getOneMessage(
+                databuffer, 
+                &num_ints_rcvd,//num ints in mesage
+                &is_meta_nis_data,// 1 for meta, 0 for data
+                &frame_number,
+                max_ints//max ints to rcv
+                );
 
-                //printf(" is_meta_nis_data %d\n ",is_meta_nis_data );
+        //printf(" is_meta_nis_data %d\n ",is_meta_nis_data );
 
-                num_events = num_ints_rcvd/2;
-/*
- *cd /local/gsd64/python/
- ./maia_zclient.py 1000000 /local/madden/data/pydata1.dat
- *
- *cd /local/madden
- *./qtGSD_GUI.py
- */
+        num_events = num_ints_rcvd/2;
+        /*
+         *cd /local/gsd64/python/
+         ./maia_zclient.py 1000000 /local/madden/data/pydata1.dat
+         *
+         *cd /local/madden
+         *./qtGSD_GUI.py
+         */
 
-		int gmn;
-		getIntegerParam(GeMessNumber,&gmn);
-		printf("Message Num %d, MessLen %d \n",gmn,num_ints_rcvd);
+        getIntegerParam(GeMessNumber,&gmn);
 
-		gmn++;
-		setIntegerParam(GeMessNumber,gmn);
+        gmn++;
+        setIntegerParam(GeMessNumber,gmn);
 
 
-                if (is_meta_nis_data==maia_client::message_data)
-                {
-                    //add new attr to img, if not already there. if there, it updates values         
-                    image->pAttributeList->add(
-                            "maia_num_events", 
-                            "num raw events in this image",
-                            NDAttrInt32, 
-                            &num_events);
+        if (is_meta_nis_data==maia_client::message_data)
+        {
+            //add new attr to img, if not already there. if there, it updates values         
+            image->pAttributeList->add(
+                    "maia_num_events", 
+                    "num raw events in this image",
+                    NDAttrInt32, 
+                    &num_events);
 
-                    image->pAttributeList->add(
-                            "maia_fnum", 
-                            "current frame number",
-                            NDAttrInt32, 
-                            &current_frame_number);
-
-
-                    setIntegerParam(GeFrameNumber, current_frame_number);
-                    setIntegerParam(GeNumEvents,num_events );
-                    setIntegerParam(GeMessageType,is_meta_nis_data );
- //                   setIntegerParam(, );
+            image->pAttributeList->add(
+                    "maia_fnum", 
+                    "current frame number",
+                    NDAttrInt32, 
+                    &current_frame_number);
 
 
-		    double elapsedtime = myclock->toc();
-
-		    double eventrate = ((double)num_events)/elapsedtime;
-		    setDoubleParam(GeEventRate,eventrate);
-
-		    myclock->tic();
+            setIntegerParam(GeFrameNumber, current_frame_number);
+            setIntegerParam(GeNumEvents,num_events );
+            setIntegerParam(GeMessageType,is_meta_nis_data );
+            //                   setIntegerParam(, );
 
 
-		    getIntegerParam(NDArrayCounter, &imageCounter);
-                    imageCounter++;
-                    setIntegerParam(NDArrayCounter, imageCounter);
+            getIntegerParam(GeTotalEvents,&gte);
 
-                    getIntegerParam(ADNumImagesCounter, &numImagesCounter);
-                    numImagesCounter++;
-                    setIntegerParam(ADNumImagesCounter, numImagesCounter);
+            gte+=num_events;
+            setIntegerParam(GeTotalEvents,gte);
 
-                    /* Put the frame number and time stamp into the buffer */
-                    image->uniqueId = imageCounter;
-                    image->timeStamp = startTime.secPastEpoch + startTime.nsec / 1.e9;
 
-                    // printf("to  updateTimeStamp \n");
-                    updateTimeStamp(&image->epicsTS);
+            double eventrate = ((double)gte)/this->elapsedtime;
+            setDoubleParam(GeEventRate,eventrate);
 
-                    getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
-		    if (is_delete_message==true)
-		    {
-			printf("Deleted 1st Message of old fpga data\n");
-		    }
 
-                    if (arrayCallbacks && is_delete_message==false) {
-                        /* Call the NDArray callback */
-                        /* Must release the lock here, or we can get into a deadlock, because we can
-                         * block on the plugin lock, and the plugin can be calling us */
-                        //!!this->unlock();
-                        asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
-                                "%s:%s: calling imageData callback\n", driverName, functionName);
-                   //     printf("to  doCallbacksGenericPointer \n");         
-                        doCallbacksGenericPointer(image, NDArrayData, 0);
-                        //!! this->lock();
-                    }// if (arrayCallbacks)
-			is_delete_message=false;
+            printf("Message Num %d, MessLen %d Totel Evts %d Runtime %5.2f \n",gmn-1,num_ints_rcvd,gte,this->elapsedtime);
 
-		}// if (is_meta_nis_data==maia_client::message_data)
+            getIntegerParam(NDArrayCounter, &imageCounter);
+            imageCounter++;
+            setIntegerParam(NDArrayCounter, imageCounter);
 
-                else if(is_meta_nis_data == maia_client::message_meta)
-                {
-                     current_frame_number= frame_number+1;
-                }
-                else
-                {
-                    printf("ERROR-0 expected fnum or meta. \n");
-                }
-        
-               image->release();
-               callParamCallbacks();
+            getIntegerParam(ADNumImagesCounter, &numImagesCounter);
+            numImagesCounter++;
+            setIntegerParam(ADNumImagesCounter, numImagesCounter);
+
+            /* Put the frame number and time stamp into the buffer */
+            image->uniqueId = imageCounter;
+            image->timeStamp = startTime.secPastEpoch + startTime.nsec / 1.e9;
+
+            // printf("to  updateTimeStamp \n");
+            updateTimeStamp(&image->epicsTS);
+
+            getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
+            if (is_delete_message==true)
+            {
+                printf("Deleted 1st Message of old fpga data\n");
+            }
+
+            if (arrayCallbacks && is_delete_message==false) {
+                /* Call the NDArray callback */
+                /* Must release the lock here, or we can get into a deadlock, because we can
+                 * block on the plugin lock, and the plugin can be calling us */
+                //!!this->unlock();
+                asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,
+                        "%s:%s: calling imageData callback\n", driverName, functionName);
+                //     printf("to  doCallbacksGenericPointer \n");         
+                doCallbacksGenericPointer(image, NDArrayData, 0);
+                //!! this->lock();
+            }// if (arrayCallbacks)
+            is_delete_message=false;
+
+        }// if (is_meta_nis_data==maia_client::message_data)
+
+        else if(is_meta_nis_data == maia_client::message_meta)
+        {
+            current_frame_number= frame_number+1;
+            setIntegerParam(ADAcquire, 0);
+        }
+        else
+        {
+            printf("ERROR-0 expected fnum or meta. \n");
+        }
+
+        image->release();
+        callParamCallbacks();
 
     }//while deamon
     printf("to  myclient->destroyData \n");
     myclient->destroyData();
+    setIntegerParam(GeIsConnected,0);
     //!! this->unlock();
 }
 
@@ -264,7 +291,7 @@ void germaniumStrip::geTask()
     unsigned int*databuffer;
 
     printf("=========================\nRunning geTask,Madden/Mead Server \n=======================\n");
-        current_state = st_start;
+    current_state = st_start;
     while(is_running_deamon)
     {
 
@@ -321,7 +348,7 @@ void germaniumStrip::geTask()
                 break;
 
             case st_data:
-                
+
                 printf("ST_DATA\n");
                 myclient->getOneMessage(
                         databuffer, 
@@ -355,10 +382,10 @@ void germaniumStrip::geTask()
                 }
 
             case st_fnum:
-                
-                
+
+
                 printf("ST_FNUM\n");
-                
+
                 myclient->getOneMessage(
                         databuffer, 
                         &num_ints_rcvd,//num ints in mesage
@@ -371,20 +398,20 @@ void germaniumStrip::geTask()
                 {
                     if (is_meta_nis_data==maia_client::message_fnum)
                     {
-                    printf("Got FNUM\n");
-                    //add new attr to img, if not already there. if there, it updates values         
+                        printf("Got FNUM\n");
+                        //add new attr to img, if not already there. if there, it updates values         
                         image->pAttributeList->add(
                                 "maia_fnum", 
                                 "frame number of data, more data coming",
                                 NDAttrInt32, 
                                 &frame_number);
-                    
-                    
+
+
                         current_state = st_data;
                     }
                     else
                     {
-                     
+
                         printf("Got META\n");
                         image->pAttributeList->add(
                                 "maia_meta", 
@@ -392,7 +419,7 @@ void germaniumStrip::geTask()
                                 NDAttrInt32, 
                                 &frame_number);
 
-                    current_state = st_start;
+                        current_state = st_start;
                     }
 
                     getIntegerParam(NDArrayCounter, &imageCounter);
@@ -435,7 +462,7 @@ void germaniumStrip::geTask()
                         image = this->pNDArrayPool->alloc(ndims,dims, NDUInt32, 0, NULL);
                         databuffer = (unsigned int*)image->pData;
 
-                       image->pAttributeList->clear();
+                        image->pAttributeList->clear();
                     }
 
                 }
@@ -516,32 +543,31 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
 
         int stat = myclient->initCommandClient();
         if (stat==0)
-	{
-	printf("To read \n");
-        setIntegerParam(GeIsConnected,1);
-        int aa = myclient->read(0);
-        printf("Started client, ret %d\n",aa);
+        {
+            printf("To read \n");
+            int aa = myclient->read(0);
+            printf("Started client, ret %d\n",aa);
 
 
 
-        istat = (epicsThreadCreate("GeDetTask",
-                    epicsThreadPriorityMedium,
-                    epicsThreadGetStackSize(epicsThreadStackMedium),
-                    (EPICSTHREADFUNC)geTaskC,
-                    this) == NULL);
+            istat = (epicsThreadCreate("GeDetTask",
+                        epicsThreadPriorityMedium,
+                        epicsThreadGetStackSize(epicsThreadStackMedium),
+                        (EPICSTHREADFUNC)geTaskC,
+                        this) == NULL);
 
 
 
-        if (istat) {
-            printf("%s:%s epicsThreadCreate failure for image task\n",
-                    driverName, functionName);
+            if (istat) {
+                printf("%s:%s epicsThreadCreate failure for image task\n",
+                        driverName, functionName);
 
+            }
         }
-	}
-	else
-	{
-		printf("ERROR could not connect to zmq server\n");
-	}
+        else
+        {
+            printf("ERROR could not connect to zmq server\n");
+        }
 
     }
     else if (function==GeDisconnZMQ && isconn==1)
@@ -552,18 +578,18 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
         is_running_deamon=false;
         myclient->stopDataWaitRcv();
 
-        setIntegerParam(GeIsConnected,0);
 
     }
     else if (function==ADAcquire && value==1 && isconn==1)
     {
-
-	setIntegerParam(GeMessNumber,0);
-         is_delete_message=false;
-	int isdel = 0;
-    	getIntegerParam(GeDeleteFirstMessage, &isdel);
-	if (isdel>0)
-		is_delete_message=true;
+        this->elapsedtime = 0.0;
+        setIntegerParam(GeTotalEvents,0);
+        setIntegerParam(GeMessNumber,0);
+        is_delete_message=false;
+        int isdel = 0;
+        getIntegerParam(GeDeleteFirstMessage, &isdel);
+        if (isdel>0)
+            is_delete_message=true;
 
         printf(" ADAcquire \n");
         myclient->startFrame();
@@ -576,16 +602,16 @@ asynStatus germaniumStrip::writeInt32(asynUser *pasynUser, epicsInt32 value)
 
     else if (function==GeFrameMode )
     {
-    	if (value ==0)
-	{
-		myclient->write(220,0);
-        }	
-	else
-	{
+        if (value ==0)
+        {
+            myclient->write(220,0);
+        }   
+        else
+        {
 
-		myclient->write(220,1);
+            myclient->write(220,1);
 
-	}
+        }
     }
     else if (function < FIRST_GE_DETECTOR_PARAM) 
         status = ADDriver::writeInt32(pasynUser, value);
@@ -661,7 +687,7 @@ asynStatus germaniumStrip::writeFloat64(asynUser *pasynUser, epicsFloat64 value)
 
 int germaniumStrip::getWhichTask()
 {
-   return(which_task);
+    return(which_task);
 }
 
 /** Report status of the driver.
@@ -714,7 +740,6 @@ germaniumStrip::germaniumStrip(const char *portName, int maxSizeX, int maxSizeY,
     char versionString[20];
     const char *functionName = "germaniumStrip";
 
-	myclock = new stopWatch();
 
 
     which_task=0;
@@ -783,27 +808,28 @@ germaniumStrip::germaniumStrip(const char *portName, int maxSizeX, int maxSizeY,
     createParam("GeFrameMode",    asynParamInt32, &GeFrameMode);
     setIntegerParam(GeDeleteFirstMessage, 0);
     setIntegerParam(GeFrameMode, 0);
-    
+
     createParam("GeNumEvents",    asynParamInt32, &GeNumEvents);
     createParam("GeFrameNumber",    asynParamInt32, &GeFrameNumber);
     createParam("GeMessageType",    asynParamInt32, &GeMessageType);
     createParam("GeEventRate",    asynParamFloat64, &GeEventRate);
 
     createParam("GeMessNumber",    asynParamInt32, &GeMessNumber);
-    
+    createParam("GeTotalEvents",    asynParamInt32, &GeTotalEvents);
+
     setIntegerParam(GeNumEvents, 0);
     setIntegerParam(GeFrameNumber, 0);
     setIntegerParam(GeMessageType, 0);
     setDoubleParam(GeEventRate ,0.0);
 
+    setIntegerParam(GeTotalEvents, 0);
     setIntegerParam(GeMessNumber, 0);
 
-    myclock->tic();
+    this->elapsedtime=0.0;
+
+    is_delete_message=false;    
 
 
-is_delete_message=false;    
-    
-    
     createParam("GeServerType",    asynParamInt32, &GeServerType);
 
     setIntegerParam( GeServerType,0);
@@ -811,6 +837,15 @@ is_delete_message=false;
     myclient= new maia_client();
 
     myclient->setConnectString(DEFAULT_ZMQ_CONN_STR);
+
+
+    int istat = (epicsThreadCreate("GeDetTask2",
+                epicsThreadPriorityMedium,
+                epicsThreadGetStackSize(epicsThreadStackMedium),
+                (EPICSTHREADFUNC)geTaskC2,
+                this) == NULL);
+
+
 
     if (status) {
         printf("%s: unable to set camera parameters\n", functionName);

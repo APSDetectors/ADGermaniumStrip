@@ -9,40 +9,39 @@ include "ADBase.template"
 # Redefine the color mode choices from ADBase.template to only have those that the simDetector
 # driver supports.  Keep the same values (xxVL), but change the menu numbers.
 
-record(mbbo, "$(P)$(R)ColorMode")
+
+record(bo, "$(P)$(R)GeDeleteFirstMessage")
 {
-   field(ZRST, "Mono")
-   field(ZRVL, "0")
-   field(ONST, "RGB1")
-   field(ONVL, "2")
-   field(TWST, "RGB2")
-   field(TWVL, "3")
-   field(THST, "RGB3")
-   field(THVL, "4")
-   field(FRST, "")
-   field(FVST, "")
-   field(SXST, "")
-   field(SVST, "")
-   field(EIST, "")
+   field(PINI, "YES")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeDeleteFirstMessage")
+   field(ZNAM, "No")
+   field(ONAM, "Yes")
+   field(VAL,  "0")
+   info(autosaveFields, "VAL")
 }
 
-record(mbbi, "$(P)$(R)ColorMode_RBV")
+record(bi, "$(P)$(R)GeDeleteFirstMessage_RBV")
 {
-   field(ZRST, "Mono")
-   field(ZRVL, "0")
-   field(ONST, "RGB1")
-   field(ONVL, "2")
-   field(TWST, "RGB2")
-   field(TWVL, "3")
-   field(THST, "RGB3")
-   field(THVL, "4")
-   field(FRST, "")
-   field(FVST, "")
-   field(SXST, "")
-   field(SVST, "")
-   field(EIST, "")
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeDeleteFirstMessage")
+   field(ZNAM, "No")
+   field(ONAM, "Yes")
+   field(SCAN, "I/O Intr")
 }
 
+record(longin, "$(P)$(R)GeTotalEvents_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeTotalEvents")
+   field(SCAN, "I/O Intr")
+}
+record(longin, "$(P)$(R)GeMessNumber_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeMessNumber")
+   field(SCAN, "I/O Intr")
+}
 
 
 record(ai, "$(P)$(R)GeEventRate_RBV")
@@ -73,50 +72,50 @@ record(longin, "$(P)$(R)GeMessageType_RBV")
    field(SCAN, "I/O Intr")
 }
 
-record(longout, "$(P)$(R)GeDeleteFirstMessage")
+
+
+
+record(bo, "$(P)$(R)GeFrameMode")
 {
-   field(DTYP, "asynInt32")
-   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeDeleteFirstMessage")
-}
-
-record(longin, "$(P)$(R)GeDeleteFirstMessage_RBV")
-{
-   field(DTYP, "asynInt32")
-   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeDeleteFirstMessage")
-   field(SCAN, "I/O Intr")
-}
-
-
-
-record(longout, "$(P)$(R)GeFrameMode")
-{
+   field(PINI, "YES")
    field(DTYP, "asynInt32")
    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeFrameMode")
+   field(ZNAM, "Normal")
+   field(ONAM, "Debug")
+   field(VAL,  "0")
+   info(autosaveFields, "VAL")
 }
 
-record(longin, "$(P)$(R)GeFrameMode_RBV")
+record(bi, "$(P)$(R)GeFrameMode_RBV")
 {
    field(DTYP, "asynInt32")
    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeFrameMode")
+   field(ZNAM, "Normal")
+   field(ONAM, "Debug")
    field(SCAN, "I/O Intr")
 }
 
 
 
-record(longout, "$(P)$(R)GeServerType")
+record(bo, "$(P)$(R)GeServerType")
 {
+   field(PINI, "YES")
    field(DTYP, "asynInt32")
    field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeServerType")
+   field(ZNAM, "Madden")
+   field(ONAM, "Mead")
+   field(VAL,  "0")
+   info(autosaveFields, "VAL")
 }
 
-record(longin, "$(P)$(R)GeServerType_RBV")
+record(bi, "$(P)$(R)GeServerType_RBV")
 {
    field(DTYP, "asynInt32")
    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeServerType")
+   field(ZNAM, "Madden")
+   field(ONAM, "Mead")
    field(SCAN, "I/O Intr")
 }
-
-
 
 
 
@@ -150,13 +149,15 @@ record(longin, "$(P)$(R)GeDisconnZMQ_RBV")
 }
 
 
-record(longin, "$(P)$(R)GeIsConnected_RBV")
+
+record(bi, "$(P)$(R)GeIsConnected_RBV")
 {
    field(DTYP, "asynInt32")
    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeIsConnected")
+   field(ZNAM, "Disconnected")
+   field(ONAM, "Connected")
    field(SCAN, "I/O Intr")
 }
-
 
 # File path.
 record(waveform, "$(P)$(R)GeServerString")

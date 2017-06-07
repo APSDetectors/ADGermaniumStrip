@@ -1,5 +1,5 @@
 # Must have loaded envPaths via st.cmd.linux or st.cmd.win32
-<envPaths
+<envPaths78
 
 errlogInit(20000)
 
@@ -64,10 +64,10 @@ iocInit()
 #create_monitor_set("auto_settings.req", 30, "P=$(PREFIX)")
 
 dbpf GER1:cam1:GeServerType,1
-dbpf GER1:cam1:GeServerString,"tcp://127.0.0.1"
-dbpf GER1:cam1:GeDeleteFirstMessage,0
+dbpf GER1:cam1:GeServerString,"tcp://172.16.0.214"
+dbpf GER1:cam1:GeDeleteFirstMessage,1
 dbpf GER1:cam1:GeFrameMode,0
-dbpf GER1:GEFILE:EnableCallbacks,1
+dbpf GER1:GEFILE:EnableCallbacks,1 
 
 dbpf GER1:image1:MinCallbackTime,1.0
 
