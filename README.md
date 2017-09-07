@@ -1,1 +1,1 @@
-# ADGernamiumStrip
+# ADGermaniumStrip
