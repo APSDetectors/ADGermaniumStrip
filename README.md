@@ -4,4 +4,6 @@ This is an EPICS areaDetector driver for the Germanium Strip Detector (GSD) deve
 
 The detector is controlled and data transmitted via ZeroMQ server running on a picoZed board which is part of a BNL-develop DAQ system to readout the detector. 
 
+## Installation notes
+* Add info on how to install...
 
