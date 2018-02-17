@@ -6,4 +6,7 @@ The detector is controlled and data transmitted via ZeroMQ server running on a p
 
 ## Installation notes
 * Add info on how to install...
+* more...
+
+## other stuff
 
