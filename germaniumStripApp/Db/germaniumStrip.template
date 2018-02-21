@@ -1,0 +1,181 @@
+#=================================================================#
+# Template file: simDetector.template
+# Database for the records specific to the simulated detector driver
+# Mark Rivers
+# March 23, 2008
+
+include "ADBase.template"
+
+# Redefine the color mode choices from ADBase.template to only have those that the simDetector
+# driver supports.  Keep the same values (xxVL), but change the menu numbers.
+
+
+record(bo, "$(P)$(R)GeDeleteFirstMessage")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeDeleteFirstMessage")
+   field(ZNAM, "No")
+   field(ONAM, "Yes")
+   field(VAL,  "0")
+   info(autosaveFields, "VAL")
+}
+
+record(bi, "$(P)$(R)GeDeleteFirstMessage_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeDeleteFirstMessage")
+   field(ZNAM, "No")
+   field(ONAM, "Yes")
+   field(SCAN, "I/O Intr")
+}
+
+record(longin, "$(P)$(R)GeTotalEvents_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeTotalEvents")
+   field(SCAN, "I/O Intr")
+}
+record(longin, "$(P)$(R)GeMessNumber_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeMessNumber")
+   field(SCAN, "I/O Intr")
+}
+
+
+record(ai, "$(P)$(R)GeEventRate_RBV")
+{
+   field(DTYP, "asynFloat64")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeEventRate")
+   field(SCAN, "I/O Intr")
+}
+
+record(longin, "$(P)$(R)GeNumEvents_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeNumEvents")
+   field(SCAN, "I/O Intr")
+}
+
+record(longin, "$(P)$(R)GeFrameNumber_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeFrameNumber")
+   field(SCAN, "I/O Intr")
+}
+
+record(longin, "$(P)$(R)GeMessageType_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeMessageType")
+   field(SCAN, "I/O Intr")
+}
+
+
+
+
+record(bo, "$(P)$(R)GeFrameMode")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeFrameMode")
+   field(ZNAM, "Normal")
+   field(ONAM, "Debug")
+   field(VAL,  "0")
+   info(autosaveFields, "VAL")
+}
+
+record(bi, "$(P)$(R)GeFrameMode_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeFrameMode")
+   field(ZNAM, "Normal")
+   field(ONAM, "Debug")
+   field(SCAN, "I/O Intr")
+}
+
+
+
+record(bo, "$(P)$(R)GeServerType")
+{
+   field(PINI, "YES")
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeServerType")
+   field(ZNAM, "Madden")
+   field(ONAM, "Mead")
+   field(VAL,  "0")
+   info(autosaveFields, "VAL")
+}
+
+record(bi, "$(P)$(R)GeServerType_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeServerType")
+   field(ZNAM, "Madden")
+   field(ONAM, "Mead")
+   field(SCAN, "I/O Intr")
+}
+
+
+
+record(longout, "$(P)$(R)GeConnZMQ")
+{
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeConnZMQ")
+}
+
+record(longin, "$(P)$(R)GeConnZMQ_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeConnZMQ")
+   field(SCAN, "I/O Intr")
+}
+
+
+
+
+record(longout, "$(P)$(R)GeDisconnZMQ")
+{
+   field(DTYP, "asynInt32")
+   field(OUT,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeDisconnZMQ")
+}
+
+record(longin, "$(P)$(R)GeDisconnZMQ_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeDisconnZMQ")
+   field(SCAN, "I/O Intr")
+}
+
+
+
+record(bi, "$(P)$(R)GeIsConnected_RBV")
+{
+   field(DTYP, "asynInt32")
+   field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeIsConnected")
+   field(ZNAM, "Disconnected")
+   field(ONAM, "Connected")
+   field(SCAN, "I/O Intr")
+}
+
+# File path.
+record(waveform, "$(P)$(R)GeServerString")
+{
+    field(PINI, "YES")
+    field(DTYP, "asynOctetWrite")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeConnString")
+    field(FTVL, "CHAR")
+    field(NELM, "256")
+    info(autosaveFields, "VAL")
+}
+
+record(waveform, "$(P)$(R)GeServerString_RBV")
+{
+    field(DTYP, "asynOctetRead")
+    field(INP,  "@asyn($(PORT),$(ADDR),$(TIMEOUT))GeConnString")
+    field(FTVL, "CHAR")
+    field(NELM, "256")
+    field(SCAN, "I/O Intr")
+}
+
