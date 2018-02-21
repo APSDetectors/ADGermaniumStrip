@@ -1,6 +1,0 @@
-#medm -x -macro "P=13SIM1:, R=cam1:" simDetector.adl &
-
-export LD_LIBRARY_PATH=/local/DPbin/ADsupport/zeromq/lib:/local/DPbin/epics/epics_2017-04-25/synApps_5_8/support/areaDetector-R3-0/ADCore/lib/linux-x86_64-debug:/local/DPbin/ADsupport/zlibinstall/lib
-
-../../bin/linux-x86_64-debug/germaniumStripApp st78.cmd
-
