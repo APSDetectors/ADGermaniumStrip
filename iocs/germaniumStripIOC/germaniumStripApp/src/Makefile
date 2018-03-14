@@ -24,17 +24,17 @@ PROD_IOC = $(PROD_NAME)
 # <name>.dbd will be created from <name>Include.dbd
 DBD += $(PROD_NAME).dbd
 
-
-$(PROD_NAME)_DBD += GeDebugpluginSupport.dbd
-$(PROD_NAME)_DBD += GepluginSupport.dbd
+# GeDebug and Geplugin need to be commented out for now. 3/14/18
+#$(PROD_NAME)_DBD += GeDebugpluginSupport.dbd
+#$(PROD_NAME)_DBD += GepluginSupport.dbd
 $(PROD_NAME)_DBD += germaniumStripSupport.dbd
 
 # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
 PROD_SRCS_DEFAULT += $(PROD_NAME)_registerRecordDeviceDriver.cpp $(PROD_NAME)Main.cpp
 PROD_SRCS_vxWorks += $(PROD_NAME)_registerRecordDeviceDriver.cpp
 
-PROD_LIBS += NDPluginGEDEBUG
-PROD_LIBS += NDPluginGe
+#PROD_LIBS += NDPluginGEDEBUG
+#PROD_LIBS += NDPluginGe
 PROD_LIBS += germaniumStrip
 
 include $(ADCORE)/ADApp/commonDriverMakefile
