@@ -8,5 +8,6 @@ The detector is controlled and data transmitted via ZeroMQ server running on a p
 * Note that this build requires EPICS-V4
 * It has not yet been tested with EPICS 7
 * Check the envPaths file for the required EPICS modules and versions, located at:  /ADGermaniumStrip/iocs/germaniumStripIOC/iocBoot/iocGermaniumStrip/envPaths
-
-
+* Requires ZeroMQ - edit the makefiles to point to your installation
+** germaniumStripApp/src/Makefile
+** iocs/germaniumStripIOC/germaniumStripApp/src/Makefile
